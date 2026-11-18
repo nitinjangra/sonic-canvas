@@ -1,0 +1,244 @@
+package com.example.soniccanvas.ui.nowplaying
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.soniccanvas.data.local.dao.SongDao
+import com.example.soniccanvas.data.local.entity.SongEntity
+import com.example.soniccanvas.data.preferences.UserSettingsRepository
+import com.example.soniccanvas.data.repository.NotificationCategory
+import com.example.soniccanvas.data.repository.NotificationRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import java.io.File
+import javax.inject.Inject
+
+enum class RepeatMode {
+    OFF, ALL, ONE
+}
+
+data class PlayerState(
+    val currentSong: SongEntity? = null,
+    val isPlaying: Boolean = false,
+    val currentPositionMs: Long = 0L,
+    val totalDurationMs: Long = 0L,
+    val isShuffleEnabled: Boolean = false,
+    val repeatMode: RepeatMode = RepeatMode.OFF,
+    val isRepeatEnabled: Boolean = false,
+    val isSleepTimerActive: Boolean = false,
+    val sleepTimerRemainingMs: Long = 0L,
+    val queue: List<SongEntity> = emptyList(),
+    val currentIndex: Int = 0
+)
+
+@HiltViewModel
+class NowPlayingViewModel @Inject constructor(
+    private val songDao: SongDao,
+    private val notificationRepository: NotificationRepository,
+    private val userSettingsRepository: UserSettingsRepository
+) : ViewModel() {
+
+    private val _playerState = MutableStateFlow(PlayerState())
+    val playerState: StateFlow<PlayerState> = _playerState.asStateFlow()
+
+    private var sleepTimerJob: Job? = null
+
+    init {
+        // Observe database changes so queue and currentSong are always in sync with DB updates
+        viewModelScope.launch {
+            songDao.getAllSongs().collect { allSongs ->
+                val songMap = allSongs.associateBy { it.id }
+                val current = _playerState.value
+                val updatedCurrent = current.currentSong?.let { songMap[it.id] ?: it }
+                val updatedQueue = current.queue.map { song -> songMap[song.id] ?: song }
+
+                if (updatedCurrent != current.currentSong || updatedQueue != current.queue) {
+                    _playerState.value = current.copy(
+                        currentSong = updatedCurrent,
+                        queue = updatedQueue
+                    )
+                }
+            }
+        }
+
+        // Simulate playback position ticker and record listening time
+        viewModelScope.launch {
+            while (true) {
+                delay(1000)
+                if (_playerState.value.isPlaying) {
+                    val currentPos = _playerState.value.currentPositionMs + 1000
+                    val total = _playerState.value.totalDurationMs
+                    if (currentPos <= total) {
+                        _playerState.value = _playerState.value.copy(currentPositionMs = currentPos)
+                    }
+                    userSettingsRepository.recordListeningTime(1000L, notificationRepository)
+                }
+            }
+        }
+    }
+
+    fun playSong(song: SongEntity, playlist: List<SongEntity> = listOf(song)) {
+        val file = File(song.path)
+        if (song.path.isNotEmpty() && !file.exists()) {
+            notificationRepository.addNotification(
+                title = "Playback Issue",
+                message = "Skipped missing file: ${song.title} (${song.artist})",
+                category = NotificationCategory.PLAYBACK_ISSUES
+            )
+            val currentIndex = playlist.indexOf(song)
+            if (playlist.size > 1 && currentIndex >= 0) {
+                val nextIndex = (currentIndex + 1) % playlist.size
+                playSong(playlist[nextIndex], playlist)
+            }
+            return
+        }
+
+        val index = playlist.indexOf(song).coerceAtLeast(0)
+        _playerState.value = PlayerState(
+            currentSong = song,
+            isPlaying = true,
+            currentPositionMs = 0L,
+            totalDurationMs = song.duration,
+            queue = playlist,
+            currentIndex = index
+        )
+        viewModelScope.launch {
+            songDao.incrementPlayCount(song.id)
+        }
+    }
+
+    fun togglePlayPause() {
+        val current = _playerState.value
+        _playerState.value = current.copy(isPlaying = !current.isPlaying)
+    }
+
+    fun seekTo(positionMs: Long) {
+        _playerState.value = _playerState.value.copy(currentPositionMs = positionMs)
+    }
+
+    fun skipToNext() {
+        val state = _playerState.value
+        if (state.queue.isNotEmpty()) {
+            val nextIndex = when (state.repeatMode) {
+                RepeatMode.ONE -> state.currentIndex
+                RepeatMode.ALL -> (state.currentIndex + 1) % state.queue.size
+                RepeatMode.OFF -> {
+                    if (state.currentIndex == state.queue.size - 1) return
+                    (state.currentIndex + 1) % state.queue.size
+                }
+            }
+            playSong(state.queue[nextIndex], state.queue)
+        }
+    }
+
+    fun skipToPrevious() {
+        val state = _playerState.value
+        if (state.queue.isNotEmpty()) {
+            val prevIndex = if (state.currentIndex - 1 < 0) state.queue.size - 1 else state.currentIndex - 1
+            playSong(state.queue[prevIndex], state.queue)
+        }
+    }
+
+    fun toggleShuffle() {
+        val state = _playerState.value
+        val newShuffle = !state.isShuffleEnabled
+        val newQueue = if (newShuffle && state.queue.isNotEmpty()) {
+            val current = state.currentSong
+            val shuffled = state.queue.shuffled().toMutableList()
+            if (current != null) {
+                shuffled.remove(current)
+                shuffled.add(0, current)
+            }
+            shuffled
+        } else {
+            state.queue
+        }
+        val newIndex = if (newQueue.isNotEmpty() && state.currentSong != null) {
+            newQueue.indexOf(state.currentSong).coerceAtLeast(0)
+        } else 0
+
+        _playerState.value = state.copy(
+            isShuffleEnabled = newShuffle,
+            queue = newQueue,
+            currentIndex = newIndex
+        )
+    }
+
+    fun toggleRepeat() {
+        val state = _playerState.value
+        val nextMode = when (state.repeatMode) {
+            RepeatMode.OFF -> RepeatMode.ALL
+            RepeatMode.ALL -> RepeatMode.ONE
+            RepeatMode.ONE -> RepeatMode.OFF
+        }
+        _playerState.value = state.copy(
+            repeatMode = nextMode,
+            isRepeatEnabled = nextMode != RepeatMode.OFF
+        )
+    }
+
+    fun startSleepTimer(minutes: Int) {
+        sleepTimerJob?.cancel()
+        if (minutes <= 0) {
+            _playerState.value = _playerState.value.copy(
+                isSleepTimerActive = minutes == -1,
+                sleepTimerRemainingMs = if (minutes == -1) -1L else 0L
+            )
+            return
+        }
+
+        val totalMs = minutes * 60 * 1000L
+        _playerState.value = _playerState.value.copy(
+            isSleepTimerActive = true,
+            sleepTimerRemainingMs = totalMs
+        )
+
+        sleepTimerJob = viewModelScope.launch {
+            var remaining = totalMs
+            while (remaining > 0) {
+                delay(1000)
+                remaining -= 1000
+                _playerState.value = _playerState.value.copy(
+                    sleepTimerRemainingMs = remaining.coerceAtLeast(0L)
+                )
+            }
+            _playerState.value = _playerState.value.copy(
+                isPlaying = false,
+                isSleepTimerActive = false,
+                sleepTimerRemainingMs = 0L
+            )
+        }
+    }
+
+    fun toggleFavorite() {
+        val song = _playerState.value.currentSong ?: return
+        viewModelScope.launch {
+            val updatedFavorite = !song.isFavorite
+            songDao.setFavorite(song.id, updatedFavorite)
+            val updatedSong = song.copy(isFavorite = updatedFavorite)
+            val updatedQueue = _playerState.value.queue.map { item ->
+                if (item.id == song.id) item.copy(isFavorite = updatedFavorite) else item
+            }
+            _playerState.value = _playerState.value.copy(
+                currentSong = updatedSong,
+                queue = updatedQueue
+            )
+        }
+    }
+
+    fun addToQueue(song: SongEntity) {
+        val state = _playerState.value
+        val currentQueue = state.queue.toMutableList()
+        if (!currentQueue.contains(song)) {
+            currentQueue.add(song)
+            _playerState.value = state.copy(
+                queue = currentQueue,
+                currentSong = state.currentSong ?: song
+            )
+        }
+    }
+}
