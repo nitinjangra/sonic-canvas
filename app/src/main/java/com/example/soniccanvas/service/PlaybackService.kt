@@ -17,6 +17,7 @@ import javax.inject.Inject
 class PlaybackService : MediaSessionService() {
 
     @Inject lateinit var audioFxController: AudioFxController
+    @Inject lateinit var visualizerController: VisualizerController
     @Inject lateinit var userSettingsRepository: UserSettingsRepository
 
     private var exoPlayer: ExoPlayer? = null
@@ -39,6 +40,7 @@ class PlaybackService : MediaSessionService() {
         player.addListener(object : Player.Listener {
             override fun onAudioSessionIdChanged(audioSessionId: Int) {
                 audioFxController.bindAudioSession(audioSessionId)
+                visualizerController.attach(audioSessionId) { _ -> }
             }
         })
 
@@ -64,6 +66,7 @@ class PlaybackService : MediaSessionService() {
             mediaSession = null
         }
         audioFxController.release()
+        visualizerController.release()
         super.onDestroy()
     }
 }

@@ -7,6 +7,7 @@ import com.example.soniccanvas.data.local.entity.SongEntity
 import com.example.soniccanvas.data.preferences.UserSettingsRepository
 import com.example.soniccanvas.data.repository.NotificationCategory
 import com.example.soniccanvas.data.repository.NotificationRepository
+import com.example.soniccanvas.service.MusicPlayerManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -39,7 +40,8 @@ data class PlayerState(
 class NowPlayingViewModel @Inject constructor(
     private val songDao: SongDao,
     private val notificationRepository: NotificationRepository,
-    private val userSettingsRepository: UserSettingsRepository
+    private val userSettingsRepository: UserSettingsRepository,
+    private val musicPlayerManager: MusicPlayerManager
 ) : ViewModel() {
 
     private val _playerState = MutableStateFlow(PlayerState())
@@ -65,17 +67,17 @@ class NowPlayingViewModel @Inject constructor(
             }
         }
 
-        // Simulate playback position ticker and record listening time
+        // Observe real ExoPlayer playback state from MusicPlayerManager
         viewModelScope.launch {
-            while (true) {
-                delay(1000)
-                if (_playerState.value.isPlaying) {
-                    val currentPos = _playerState.value.currentPositionMs + 1000
-                    val total = _playerState.value.totalDurationMs
-                    if (currentPos <= total) {
-                        _playerState.value = _playerState.value.copy(currentPositionMs = currentPos)
-                    }
-                    userSettingsRepository.recordListeningTime(1000L, notificationRepository)
+            musicPlayerManager.playbackState.collect { playbackState ->
+                val current = _playerState.value
+                _playerState.value = current.copy(
+                    isPlaying = playbackState.isPlaying,
+                    currentPositionMs = playbackState.currentPositionMs,
+                    totalDurationMs = if (playbackState.durationMs > 0) playbackState.durationMs else current.totalDurationMs
+                )
+                if (playbackState.isPlaying) {
+                    userSettingsRepository.recordListeningTime(500L, notificationRepository)
                 }
             }
         }
@@ -106,17 +108,20 @@ class NowPlayingViewModel @Inject constructor(
             queue = playlist,
             currentIndex = index
         )
+
+        musicPlayerManager.play(song.uri, song.title, song.artist, song.artworkUri)
+
         viewModelScope.launch {
             songDao.incrementPlayCount(song.id)
         }
     }
 
     fun togglePlayPause() {
-        val current = _playerState.value
-        _playerState.value = current.copy(isPlaying = !current.isPlaying)
+        musicPlayerManager.togglePlayPause()
     }
 
     fun seekTo(positionMs: Long) {
+        musicPlayerManager.seekTo(positionMs)
         _playerState.value = _playerState.value.copy(currentPositionMs = positionMs)
     }
 
@@ -211,6 +216,7 @@ class NowPlayingViewModel @Inject constructor(
                 isSleepTimerActive = false,
                 sleepTimerRemainingMs = 0L
             )
+            musicPlayerManager.togglePlayPause()
         }
     }
 
