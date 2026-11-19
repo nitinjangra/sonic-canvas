@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to SonicCanvas will be documented in this file.
+All notable changes to Sonixa will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v1.0.0/spec/v1.0.0).
@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v1.0.0
   - Sleep timer with a revolving animated hourglass indicator.
 - **Production Reliability & Privacy**:
   - 100% offline-first privacy architecture with zero network tracking or cloud telemetry.
-  - Local crash logging (`LocalLogger`) capturing unhandled exceptions and stacktraces to `[FilesDir]/SonicCanvas_Debug_Log.txt`.
+  - Local crash logging (`LocalLogger`) capturing unhandled exceptions and stacktraces to `[FilesDir]/Sonixa_Debug_Log.txt`.
   - Automatic crash-on-restart recovery notifications.
 - **Testing & Tooling**:
   - Comprehensive unit test suite for LRC parsing and playlist flows covering both positive and negative test scenarios.

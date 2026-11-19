@@ -1,6 +1,6 @@
-# SonicCanvas 🎵
+# Sonixa 🎵
 
-SonicCanvas is a high-resolution, offline-first Android music player built with **Jetpack Compose**, **Material 3**, and modern Android architecture. Designed with a gorgeous dark glassmorphic UI, SonicCanvas delivers audiophile-grade local playback with rich customization, real-time audio effects, and total privacy.
+Sonixa is a high-resolution, offline-first Android music player built with **Jetpack Compose**, **Material 3**, and modern Android architecture. Designed with a gorgeous dark glassmorphic UI, Sonixa delivers audiophile-grade local playback with rich customization, real-time audio effects, and total privacy.
 
 ---
 
@@ -26,7 +26,7 @@ SonicCanvas is a high-resolution, offline-first Android music player built with 
 - **Local Privacy First**: 100% offline playback. No cloud tracking or external telemetry.
 
 ### 🛡️ Production Reliability
-- **Local Crash Logger**: Captures uncaught exceptions locally (`SonicCanvas_Debug_Log.txt`) with automatic restart recovery notifications.
+- **Local Crash Logger**: Captures uncaught exceptions locally (`Sonixa_Debug_Log.txt`) with automatic restart recovery notifications.
 - **R8 Minification & Shrinking**: Fully optimized ProGuard / R8 rules for production builds.
 
 ---

@@ -18,13 +18,13 @@ class SonicApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        localLogger.log("App", "SonicCanvas Application created & local crash logger initialized.")
+        localLogger.log("App", "Sonixa Application created & local crash logger initialized.")
 
         if (localLogger.hasCrashedOnLastRun()) {
             val logPath = localLogger.getLogDirectoryPath()
             notificationRepository.addNotification(
                 title = "⚠️ App Recovered from Previous Crash",
-                message = "SonicCanvas encountered an unexpected error during the last session. Debug log stored at:\n$logPath/SonicCanvas_Debug_Log.txt",
+                message = "Sonixa encountered an unexpected error during the last session. Debug log stored at:\n$logPath/Sonixa_Debug_Log.txt",
                 category = NotificationCategory.SYSTEM
             )
         }

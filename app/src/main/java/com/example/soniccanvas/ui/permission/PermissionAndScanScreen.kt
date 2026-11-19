@@ -94,7 +94,7 @@ fun PermissionAndScanScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "SonicCanvas needs permission to scan audio files on your device. Your music stays 100% private and offline on your phone.",
+                    text = "Sonixa needs permission to scan audio files on your device. Your music stays 100% private and offline on your phone.",
                     fontSize = 15.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

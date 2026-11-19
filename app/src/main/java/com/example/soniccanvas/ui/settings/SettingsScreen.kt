@@ -235,7 +235,7 @@ fun SettingsScreen(
                 item {
                     SettingsCard {
                         SettingsRowClickable(
-                            title = "SonicCanvas",
+                            title = "Sonixa",
                             subtitle = "Version 1.0.0 (High-Res FLAC Audio Player)",
                             onClick = { }
                         )
