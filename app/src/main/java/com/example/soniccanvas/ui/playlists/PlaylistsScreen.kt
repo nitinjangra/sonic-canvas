@@ -91,6 +91,7 @@ fun PlaylistsScreen(
     onAddSongToPlaylist: (playlistId: Long, songId: Long) -> Unit = { _, _ -> },
     onDeletePlaylist: (playlistId: Long) -> Unit = {},
     getSongsForPlaylist: (playlistId: Long) -> Flow<List<SongEntity>> = { emptyFlow() },
+    getSongCountForPlaylist: (playlistId: Long) -> Flow<Int> = { emptyFlow() },
     onSongClick: (SongEntity, List<SongEntity>) -> Unit = { _, _ -> },
     onPlayAll: (List<SongEntity>) -> Unit = {},
     onShuffleAll: (List<SongEntity>) -> Unit = {},
@@ -264,12 +265,10 @@ fun PlaylistsScreen(
                             )
                         }
                     } else {
-                        items(playlists) { playlist ->
-                            AutoPlaylistRow(
-                                title = playlist.name,
-                                songCount = 0,
-                                icon = Icons.AutoMirrored.Filled.QueueMusic,
-                                iconTint = MaterialTheme.colorScheme.primary,
+                        items(playlists, key = { it.id }) { playlist ->
+                            CustomPlaylistRow(
+                                playlist = playlist,
+                                getSongCount = getSongCountForPlaylist,
                                 onClick = { selectedPlaylistEntity = playlist }
                             )
                         }
@@ -353,12 +352,10 @@ fun PlaylistsScreen(
                             )
                         }
                     } else {
-                        items(playlists) { playlist ->
-                            AutoPlaylistCard(
-                                title = playlist.name,
-                                songCount = 0,
-                                icon = Icons.AutoMirrored.Filled.QueueMusic,
-                                iconTint = MaterialTheme.colorScheme.primary,
+                        items(playlists, key = { it.id }) { playlist ->
+                            CustomPlaylistCard(
+                                playlist = playlist,
+                                getSongCount = getSongCountForPlaylist,
                                 onClick = { selectedPlaylistEntity = playlist }
                             )
                         }
@@ -480,6 +477,38 @@ fun PlaylistsScreen(
             )
         }
     }
+}
+
+@Composable
+fun CustomPlaylistRow(
+    playlist: PlaylistEntity,
+    getSongCount: (Long) -> Flow<Int>,
+    onClick: () -> Unit
+) {
+    val count by getSongCount(playlist.id).collectAsState(initial = 0)
+    AutoPlaylistRow(
+        title = playlist.name,
+        songCount = count,
+        icon = Icons.AutoMirrored.Filled.QueueMusic,
+        iconTint = MaterialTheme.colorScheme.primary,
+        onClick = onClick
+    )
+}
+
+@Composable
+fun CustomPlaylistCard(
+    playlist: PlaylistEntity,
+    getSongCount: (Long) -> Flow<Int>,
+    onClick: () -> Unit
+) {
+    val count by getSongCount(playlist.id).collectAsState(initial = 0)
+    AutoPlaylistCard(
+        title = playlist.name,
+        songCount = count,
+        icon = Icons.AutoMirrored.Filled.QueueMusic,
+        iconTint = MaterialTheme.colorScheme.primary,
+        onClick = onClick
+    )
 }
 
 @Composable

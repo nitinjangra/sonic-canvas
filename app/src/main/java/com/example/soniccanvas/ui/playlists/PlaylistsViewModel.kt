@@ -53,4 +53,6 @@ class PlaylistsViewModel @Inject constructor(
     }
 
     fun getSongsForPlaylist(playlistId: Long) = playlistDao.getSongsForPlaylist(playlistId)
+
+    fun getSongCountForPlaylist(playlistId: Long) = playlistDao.getSongCountForPlaylist(playlistId)
 }
