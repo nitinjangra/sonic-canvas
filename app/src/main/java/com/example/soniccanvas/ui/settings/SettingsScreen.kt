@@ -70,6 +70,7 @@ fun SettingsScreen(
     onOpenEqualizer: () -> Unit,
     onRescanMusic: () -> Unit,
     onSetFilterShortTracks: (Boolean) -> Unit,
+    onSetVibrationEnabled: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showThemeSheet by remember { mutableStateOf(false) }
@@ -165,6 +166,12 @@ fun SettingsScreen(
                             subtitle = "Seamless transition between tracks",
                             checked = settings.gaplessPlayback,
                             onCheckedChange = onSetGaplessPlayback
+                        )
+                        SettingsRowSwitch(
+                            title = "Haptic feedback on playback controls",
+                            subtitle = "Vibrate on play, pause, previous, and next taps",
+                            checked = settings.vibrationEnabled,
+                            onCheckedChange = onSetVibrationEnabled
                         )
                     }
                 }

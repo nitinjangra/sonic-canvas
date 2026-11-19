@@ -48,7 +48,10 @@ data class UserSettings(
     val minTrackLengthSec: Int = 30,
     val totalListeningMs: Long = 0L,
     val notifiedHours: Int = 0,
-    val filterShortTracks: Boolean = true
+    val filterShortTracks: Boolean = true,
+    val hasScanned: Boolean = false,
+    val nextFunFactHour: Int = 1,
+    val vibrationEnabled: Boolean = true
 )
 
 @Singleton
@@ -75,6 +78,9 @@ class UserSettingsRepository @Inject constructor(
         val TOTAL_LISTENING_MS = longPreferencesKey("total_listening_ms")
         val NOTIFIED_HOURS = intPreferencesKey("notified_hours")
         val FILTER_SHORT_TRACKS = booleanPreferencesKey("filter_short_tracks")
+        val HAS_SCANNED = booleanPreferencesKey("has_scanned")
+        val NEXT_FUN_FACT_HOUR = intPreferencesKey("next_fun_fact_hour")
+        val VIBRATION_ENABLED = booleanPreferencesKey("vibration_enabled")
     }
 
     val userSettingsFlow: Flow<UserSettings> = context.dataStore.data.map { prefs ->
@@ -105,8 +111,23 @@ class UserSettingsRepository @Inject constructor(
             minTrackLengthSec = prefs[Keys.MIN_TRACK_LENGTH_SEC] ?: 30,
             totalListeningMs = prefs[Keys.TOTAL_LISTENING_MS] ?: 0L,
             notifiedHours = prefs[Keys.NOTIFIED_HOURS] ?: 0,
-            filterShortTracks = prefs[Keys.FILTER_SHORT_TRACKS] ?: true
+            filterShortTracks = prefs[Keys.FILTER_SHORT_TRACKS] ?: true,
+            hasScanned = prefs[Keys.HAS_SCANNED] ?: false,
+            nextFunFactHour = prefs[Keys.NEXT_FUN_FACT_HOUR] ?: 1,
+            vibrationEnabled = prefs[Keys.VIBRATION_ENABLED] ?: true
         )
+    }
+
+    suspend fun setVibrationEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.VIBRATION_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setHasScanned(hasScanned: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.HAS_SCANNED] = hasScanned
+        }
     }
 
     suspend fun setFilterShortTracks(enabled: Boolean) {
@@ -218,28 +239,16 @@ class UserSettingsRepository @Inject constructor(
             val newMs = currentMs + ms
             prefs[Keys.TOTAL_LISTENING_MS] = newMs
 
-            val currentHours = (newMs / (1000 * 60 * 60)).toInt()
-            val notified = prefs[Keys.NOTIFIED_HOURS] ?: 0
+            val totalHours = (newMs / (1000 * 60 * 60)).toInt()
+            val nextFunFactTarget = prefs[Keys.NEXT_FUN_FACT_HOUR] ?: 1
 
-            if (currentHours > notified) {
-                prefs[Keys.NOTIFIED_HOURS] = currentHours
-                val title = when (currentHours) {
-                    1 -> "🎵 1 Hour of Pure Audio!"
-                    2 -> "🎧 2 Hours Strong!"
-                    3 -> "🌟 3-Hour Musical Journey!"
-                    5 -> "🔥 5 Hours of Sonic Bliss!"
-                    10 -> "🏆 10-Hour Audiophile Milestone!"
-                    else -> "🎶 $currentHours Hours of Music!"
-                }
-                val message = when (currentHours) {
-                    1 -> "You've spent 1 hour listening to high-res music in SonicCanvas. Keep the groove going!"
-                    2 -> "Two hours of musical immersion! Your ears have exceptional taste."
-                    3 -> "Three hours! SonicCanvas is your companion for the long haul."
-                    else -> "Amazing dedication! You have utilized SonicCanvas for $currentHours hours total."
-                }
+            if (totalHours >= nextFunFactTarget) {
+                // Double target exponentially: 1, 2, 4, 8, 16, 32, 64...
+                prefs[Keys.NEXT_FUN_FACT_HOUR] = if (nextFunFactTarget == 0) 1 else nextFunFactTarget * 2
+                val fact = NotificationRepository.AUDIOPHILE_FUN_FACTS.random()
                 notificationRepository.addNotification(
-                    title = title,
-                    message = message,
+                    title = fact.first,
+                    message = fact.second,
                     category = NotificationCategory.FUN_FACTS
                 )
             }

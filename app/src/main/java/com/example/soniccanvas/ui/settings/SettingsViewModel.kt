@@ -29,6 +29,14 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.setTheme(theme) }
     }
 
+    fun setHasScanned(hasScanned: Boolean) {
+        viewModelScope.launch { settingsRepository.setHasScanned(hasScanned) }
+    }
+
+    fun setVibrationEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setVibrationEnabled(enabled) }
+    }
+
     fun setMatchAlbumColors(enabled: Boolean) {
         viewModelScope.launch { settingsRepository.setMatchAlbumColors(enabled) }
     }
