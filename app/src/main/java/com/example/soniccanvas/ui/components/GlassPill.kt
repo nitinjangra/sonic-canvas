@@ -24,67 +24,70 @@ fun GlassPill(
     val shape = RoundedCornerShape(cornerRadius)
     val isDark = MaterialTheme.colorScheme.background.red < 0.5f
 
+    // Enhanced multi-stop translucent glass gradient fill
     val glassBackgroundBrush = if (isDark) {
         Brush.verticalGradient(
             colors = listOf(
-                Color(0x35FFFFFF),
-                Color(0x18FFFFFF),
-                Color(0xC011141B)
+                Color(0x45FFFFFF), // Brighter frosted top highlight
+                Color(0x1AFFFFFF), // Mid translucent body
+                Color(0xD00F1219)  // Deep frosted base
             )
         )
     } else {
         Brush.verticalGradient(
             colors = listOf(
-                Color(0xF0FFFFFF),
-                Color(0xDDF0F4F8)
+                Color(0xF5FFFFFF),
+                Color(0xE0F0F4F8)
             )
         )
     }
 
+    // Specular border gradient (bright top rim fading down)
     val glassBorderBrush = if (isDark) {
         Brush.verticalGradient(
             colors = listOf(
-                Color(0x77FFFFFF),
-                Color(0x22FFFFFF),
-                Color(0x0EFFFFFF)
+                Color(0xAAFFFFFF),
+                Color(0x33FFFFFF),
+                Color(0x11FFFFFF)
             )
         )
     } else {
         Brush.verticalGradient(
             colors = listOf(
-                Color(0x66000000),
-                Color(0x1A000000)
+                Color(0x88000000),
+                Color(0x22000000)
             )
         )
     }
 
-    val glowSpotColor = MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.3f else 0.15f)
+    val glowSpotColor = MaterialTheme.colorScheme.primary.copy(alpha = if (isDark) 0.4f else 0.2f)
 
     Box(
         modifier = modifier
             .shadow(
-                elevation = 16.dp,
+                elevation = 22.dp,
                 shape = shape,
                 clip = false,
-                ambientColor = Color.Black.copy(alpha = 0.5f),
+                ambientColor = Color.Black.copy(alpha = 0.6f),
                 spotColor = glowSpotColor
             )
             .clip(shape)
             .background(glassBackgroundBrush)
-            .border(width = 1.dp, brush = glassBorderBrush, shape = shape)
+            .border(width = 1.25.dp, brush = glassBorderBrush, shape = shape)
     ) {
-        // Inner Glossy Highlight Shine Layer
+        // Top Specular Reflection Shine Layer
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color.White.copy(alpha = if (isDark) 0.15f else 0.3f),
+                            Color.White.copy(alpha = if (isDark) 0.22f else 0.4f),
+                            Color.White.copy(alpha = if (isDark) 0.04f else 0.1f),
                             Color.Transparent
                         ),
                         startY = 0f,
-                        endY = 80f
+                        endY = 100f
                     )
                 )
         )
