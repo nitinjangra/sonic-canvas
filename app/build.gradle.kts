@@ -7,13 +7,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.soniccanvas"
+    namespace = "com.example.sonixa"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.soniccanvas"
+        applicationId = "com.example.sonixa"
         minSdk = 26
         targetSdk = 37
         versionCode = 1

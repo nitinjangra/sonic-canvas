@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SonicCanvas"
+rootProject.name = "Sonixa"
 include(":app")
