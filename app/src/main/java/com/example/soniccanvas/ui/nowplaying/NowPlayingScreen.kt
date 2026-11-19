@@ -1,5 +1,6 @@
 package com.example.soniccanvas.ui.nowplaying
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.animateColorAsState
@@ -16,6 +17,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +28,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -78,11 +81,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -106,6 +113,7 @@ fun NowPlayingScreen(
     isSleepTimerActive: Boolean,
     sleepTimerRemainingMs: Long,
     isEqualizerEnabled: Boolean = false,
+    vibrationEnabled: Boolean = true,
     lyricsState: LyricsUiState,
     onSaveLyrics: (Long, String) -> Unit,
     onSeekToLyric: (Long) -> Unit,
@@ -133,6 +141,10 @@ fun NowPlayingScreen(
 
     val pagerState = rememberPagerState(initialPage = currentIndex) { queue.size }
 
+    BackHandler {
+        onDismiss()
+    }
+
     LaunchedEffect(currentIndex) {
         if (pagerState.currentPage != currentIndex) {
             pagerState.animateScrollToPage(currentIndex)
@@ -145,10 +157,28 @@ fun NowPlayingScreen(
         }
     }
 
+    var offsetY by remember { mutableStateOf(0f) }
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .offset { IntOffset(0, offsetY.toInt().coerceAtLeast(0)) }
+            .pointerInput(Unit) {
+                detectVerticalDragGestures(
+                    onVerticalDrag = { _, dragAmount ->
+                        offsetY = (offsetY + dragAmount).coerceAtLeast(0f)
+                    },
+                    onDragEnd = {
+                        if (offsetY > 180f) {
+                            onDismiss()
+                        } else {
+                            offsetY = 0f
+                        }
+                    }
+                )
+            }
+            .clickable { }
     ) {
         Column(
             modifier = Modifier
@@ -209,116 +239,124 @@ fun NowPlayingScreen(
                             .fillMaxWidth()
                             .aspectRatio(1f)
                             .clip(RoundedCornerShape(24.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                            .padding(16.dp),
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
                         contentAlignment = Alignment.Center
                     ) {
                         if (showLyricsInThumbnailArea) {
-                            if (hasLyrics) {
-                                val currentLineIndex = remember(currentPositionMs, lyricsState.lyricsLines) {
-                                    if (!lyricsState.isSynced || lyricsState.lyricsLines.isEmpty()) -1
-                                    else {
-                                        val index = lyricsState.lyricsLines.indexOfLast { it.timestampMs <= currentPositionMs }
-                                        if (index >= 0) index else 0
-                                    }
-                                }
-
-                                val lyricsListState = rememberLazyListState()
-                                LaunchedEffect(currentLineIndex) {
-                                    if (currentLineIndex >= 0 && currentLineIndex < lyricsState.lyricsLines.size) {
-                                        lyricsListState.animateScrollToItem(currentLineIndex)
-                                    }
-                                }
-
-                                Column(
-                                    modifier = Modifier.fillMaxSize(),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    if (lyricsState.isSynced && lyricsState.lyricsLines.isNotEmpty()) {
-                                        Text(
-                                            text = "Tap a line to jump to it",
-                                            fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.padding(bottom = 8.dp)
-                                        )
-
-                                        LazyColumn(
-                                            state = lyricsListState,
-                                            contentPadding = PaddingValues(vertical = 40.dp),
-                                            verticalArrangement = Arrangement.spacedBy(16.dp),
-                                            modifier = Modifier.fillMaxSize()
-                                        ) {
-                                            itemsIndexed(lyricsState.lyricsLines) { index, line ->
-                                                val isCurrent = index == currentLineIndex
-                                                val textColor by animateColorAsState(
-                                                    targetValue = if (isCurrent) MaterialTheme.colorScheme.primary
-                                                    else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f),
-                                                    label = "pager_lyric_color"
-                                                )
-
-                                                Text(
-                                                    text = line.text,
-                                                    fontSize = if (isCurrent) 20.sp else 16.sp,
-                                                    fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
-                                                    color = textColor,
-                                                    textAlign = TextAlign.Center,
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .clickable { onSeekToLyric(line.timestampMs) }
-                                                        .padding(horizontal = 8.dp)
-                                                )
-                                            }
-                                        }
-                                    } else if (lyricsState.plainText.isNotEmpty()) {
-                                        LazyColumn(
-                                            contentPadding = PaddingValues(vertical = 16.dp),
-                                            modifier = Modifier.fillMaxSize()
-                                        ) {
-                                            item {
-                                                Text(
-                                                    text = lyricsState.plainText,
-                                                    fontSize = 16.sp,
-                                                    color = MaterialTheme.colorScheme.onBackground,
-                                                    lineHeight = 24.sp,
-                                                    textAlign = TextAlign.Center,
-                                                    modifier = Modifier.fillMaxWidth()
-                                                )
-                                            }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (hasLyrics) {
+                                    val currentLineIndex = remember(currentPositionMs, lyricsState.lyricsLines) {
+                                        if (!lyricsState.isSynced || lyricsState.lyricsLines.isEmpty()) -1
+                                        else {
+                                            val index = lyricsState.lyricsLines.indexOfLast { it.timestampMs <= currentPositionMs }
+                                            if (index >= 0) index else 0
                                         }
                                     }
-                                }
-                            } else {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center,
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    Text(
-                                        text = "No lyrics found",
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    Button(
-                                        onClick = {
-                                            lyricsInputText = ""
-                                            showAddLyricsDialog = true
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+
+                                    val lyricsListState = rememberLazyListState()
+                                    LaunchedEffect(currentLineIndex) {
+                                        if (currentLineIndex >= 0 && currentLineIndex < lyricsState.lyricsLines.size) {
+                                            lyricsListState.animateScrollToItem(currentLineIndex)
+                                        }
+                                    }
+
+                                    Column(
+                                        modifier = Modifier.fillMaxSize(),
+                                        horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
-                                        Text("Add Lyrics", color = Color.Black)
+                                        if (lyricsState.isSynced && lyricsState.lyricsLines.isNotEmpty()) {
+                                            Text(
+                                                text = "Tap a line to jump to it",
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.padding(bottom = 8.dp)
+                                            )
+
+                                            LazyColumn(
+                                                state = lyricsListState,
+                                                contentPadding = PaddingValues(vertical = 40.dp),
+                                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                                                modifier = Modifier.fillMaxSize()
+                                            ) {
+                                                itemsIndexed(lyricsState.lyricsLines) { index, line ->
+                                                    val isCurrent = index == currentLineIndex
+                                                    val textColor by animateColorAsState(
+                                                        targetValue = if (isCurrent) MaterialTheme.colorScheme.primary
+                                                        else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f),
+                                                        label = "pager_lyric_color"
+                                                    )
+
+                                                    Text(
+                                                        text = line.text,
+                                                        fontSize = if (isCurrent) 20.sp else 16.sp,
+                                                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
+                                                        color = textColor,
+                                                        textAlign = TextAlign.Center,
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .clickable { onSeekToLyric(line.timestampMs) }
+                                                            .padding(horizontal = 8.dp)
+                                                    )
+                                                }
+                                            }
+                                        } else if (lyricsState.plainText.isNotEmpty()) {
+                                            LazyColumn(
+                                                contentPadding = PaddingValues(vertical = 16.dp),
+                                                modifier = Modifier.fillMaxSize()
+                                            ) {
+                                                item {
+                                                    Text(
+                                                        text = lyricsState.plainText,
+                                                        fontSize = 16.sp,
+                                                        color = MaterialTheme.colorScheme.onBackground,
+                                                        lineHeight = 24.sp,
+                                                        textAlign = TextAlign.Center,
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center,
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        Text(
+                                            text = "No lyrics found",
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Button(
+                                            onClick = {
+                                                lyricsInputText = ""
+                                                showAddLyricsDialog = true
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                        ) {
+                                            Text("Add Lyrics", color = Color.Black)
+                                        }
                                     }
                                 }
                             }
                         } else {
                             AsyncImage(
                                 model = song.artworkUri,
+                                fallback = painterResource(com.example.soniccanvas.R.drawable.placeholder),
+                                error = painterResource(com.example.soniccanvas.R.drawable.placeholder),
                                 contentDescription = song.title,
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .clip(RoundedCornerShape(16.dp))
+                                    .clip(RoundedCornerShape(24.dp))
                                     .pointerInput(Unit) {
                                         detectTapGestures(
                                             onTap = { onDismiss() },
@@ -510,12 +548,17 @@ fun NowPlayingScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Controls
+            val haptic = LocalHapticFeedback.current
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onToggleShuffle) {
+                IconButton(onClick = {
+                    if (vibrationEnabled) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onToggleShuffle()
+                }) {
                     Icon(
                         imageVector = Icons.Default.Shuffle,
                         contentDescription = "Shuffle",
@@ -523,7 +566,10 @@ fun NowPlayingScreen(
                     )
                 }
 
-                IconButton(onClick = onSkipToPrevious, modifier = Modifier.size(48.dp)) {
+                IconButton(onClick = {
+                    if (vibrationEnabled) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onSkipToPrevious()
+                }, modifier = Modifier.size(48.dp)) {
                     Icon(
                         imageVector = Icons.Default.SkipPrevious,
                         contentDescription = "Previous",
@@ -537,7 +583,10 @@ fun NowPlayingScreen(
                         .size(68.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary)
-                        .clickable { onTogglePlayPause() },
+                        .clickable {
+                            if (vibrationEnabled) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onTogglePlayPause()
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -548,7 +597,10 @@ fun NowPlayingScreen(
                     )
                 }
 
-                IconButton(onClick = onSkipToNext, modifier = Modifier.size(48.dp)) {
+                IconButton(onClick = {
+                    if (vibrationEnabled) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onSkipToNext()
+                }, modifier = Modifier.size(48.dp)) {
                     Icon(
                         imageVector = Icons.Default.SkipNext,
                         contentDescription = "Next",
@@ -557,7 +609,10 @@ fun NowPlayingScreen(
                     )
                 }
 
-                IconButton(onClick = onToggleRepeat) {
+                IconButton(onClick = {
+                    if (vibrationEnabled) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onToggleRepeat()
+                }) {
                     val (repeatIcon, repeatTint, contentDesc) = when (repeatMode) {
                         AppRepeatMode.OFF -> Triple(Icons.Default.Repeat, MaterialTheme.colorScheme.onSurfaceVariant, "Repeat Off")
                         AppRepeatMode.ALL -> Triple(Icons.Default.Repeat, MaterialTheme.colorScheme.primary, "Repeat All")

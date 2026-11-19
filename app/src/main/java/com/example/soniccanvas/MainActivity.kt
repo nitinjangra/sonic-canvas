@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -76,9 +77,6 @@ class MainActivity : ComponentActivity() {
     ) { permissions ->
         val audioGranted = permissions.values.any { it }
         hasAudioPermissionState.value = audioGranted
-        if (audioGranted) {
-            libraryViewModel.scanMusic()
-        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,6 +87,13 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val settings by settingsViewModel.settings.collectAsState()
+
+            LaunchedEffect(hasAudioPermissionState.value, settings.hasScanned) {
+                if (hasAudioPermissionState.value && !settings.hasScanned) {
+                    libraryViewModel.scanMusic()
+                    settingsViewModel.setHasScanned(true)
+                }
+            }
 
             SonicCanvasTheme(
                 appTheme = settings.theme,
@@ -118,9 +123,6 @@ class MainActivity : ComponentActivity() {
         }
         val isGranted = ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
         hasAudioPermissionState.value = isGranted
-        if (isGranted) {
-            libraryViewModel.scanMusic()
-        }
     }
 
     private fun requestAudioPermissions() {
@@ -265,6 +267,9 @@ fun MainAppContent(
                         getSongsForPlaylist = { playlistId ->
                             playlistsViewModel.getSongsForPlaylist(playlistId)
                         },
+                        getSongCountForPlaylist = { playlistId ->
+                            playlistsViewModel.getSongCountForPlaylist(playlistId)
+                        },
                         onSongClick = { song, list -> playSongWithBehavior(song, list) },
                         onPlayAll = { list -> playSongWithBehavior(list.first(), list) },
                         onShuffleAll = { list -> playSongWithBehavior(list.shuffled().first(), list.shuffled()) }
@@ -287,7 +292,8 @@ fun MainAppContent(
                         onRemoveSkippedFolder = { settingsViewModel.removeSkippedFolder(it) },
                         onOpenEqualizer = { activeOverlay = ScreenOverlay.EQUALIZER },
                         onRescanMusic = { settingsViewModel.rescanLibrary() },
-                        onSetFilterShortTracks = { settingsViewModel.setFilterShortTracks(it) }
+                        onSetFilterShortTracks = { settingsViewModel.setFilterShortTracks(it) },
+                        onSetVibrationEnabled = { settingsViewModel.setVibrationEnabled(it) }
                     )
                 }
 
@@ -302,12 +308,15 @@ fun MainAppContent(
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(bottom = 20.dp)
+                        modifier = Modifier
+                            .navigationBarsPadding()
+                            .padding(bottom = 12.dp)
                     ) {
                         if (playerState.currentSong != null) {
                             MiniPlayerPill(
                                 song = playerState.currentSong,
                                 isPlaying = playerState.isPlaying,
+                                vibrationEnabled = settings.vibrationEnabled,
                                 onTogglePlayPause = { nowPlayingViewModel.togglePlayPause() },
                                 onNextTrack = { nowPlayingViewModel.skipToNext() },
                                 onClick = { activeOverlay = ScreenOverlay.NOW_PLAYING },

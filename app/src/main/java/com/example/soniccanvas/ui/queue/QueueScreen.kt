@@ -1,5 +1,6 @@
 package com.example.soniccanvas.ui.queue
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -49,6 +50,9 @@ fun QueueScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    BackHandler {
+        onBack()
+    }
     Box(
         modifier = modifier
             .fillMaxSize()

@@ -1,5 +1,6 @@
 package com.example.soniccanvas.ui.lyrics
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -70,6 +71,10 @@ fun LyricsScreen(
     var inputText by remember { mutableStateOf("") }
 
     val listState = rememberLazyListState()
+
+    BackHandler {
+        onBack()
+    }
 
     val currentLineIndex = remember(currentPositionMs, uiState.lyricsLines) {
         if (!uiState.isSynced || uiState.lyricsLines.isEmpty()) -1
