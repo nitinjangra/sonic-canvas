@@ -1,6 +1,6 @@
 # Room Database
--keep class com.example.sonixa.data.local.entity.** { *; }
--keep class com.example.sonixa.data.local.dao.** { *; }
+-keep class com.pixelpushers.sonixa.data.local.entity.** { *; }
+-keep class com.pixelpushers.sonixa.data.local.dao.** { *; }
 -keepclassmembers class * extends androidx.room.RoomDatabase { *; }
 
 # Dagger Hilt
@@ -12,7 +12,7 @@
 -keep class androidx.media3.** { *; }
 
 # Moshi / Serialization
--keep class com.example.sonixa.data.** { *; }
+-keep class com.pixelpushers.sonixa.data.** { *; }
 -keepattributes Signature, InnerClasses, EnclosingMethod
 
 # Kotlin Coroutines

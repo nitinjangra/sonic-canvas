@@ -7,13 +7,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.sonixa"
+    namespace = "com.pixelpushers.sonixa"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.sonixa"
+        applicationId = "com.pixelpushers.sonixa"
         minSdk = 26
         targetSdk = 37
         versionCode = 1
