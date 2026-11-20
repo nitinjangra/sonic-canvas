@@ -100,7 +100,8 @@ class NowPlayingViewModel @Inject constructor(
         }
 
         val index = playlist.indexOf(song).coerceAtLeast(0)
-        _playerState.value = PlayerState(
+        val currentState = _playerState.value
+        _playerState.value = currentState.copy(
             currentSong = song,
             isPlaying = true,
             currentPositionMs = 0L,

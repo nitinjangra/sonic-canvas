@@ -53,7 +53,7 @@ class NotificationRepository @Inject constructor() {
     private val initialNotifications = listOf(
         AppNotification(
             title = "Welcome to Sonixa",
-            message = "Sonixa v1.0 installed successfully. Enjoy high-resolution offline FLAC playback!",
+            message = "Sonixa v2.1.0 installed successfully. Enjoy high-resolution offline FLAC playback!",
             category = NotificationCategory.RELEASE_NOTES
         ),
         AppNotification(

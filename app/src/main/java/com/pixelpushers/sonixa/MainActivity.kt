@@ -116,6 +116,8 @@ class MainActivity : ComponentActivity() {
 
             SonixaTheme(
                 appTheme = settings.theme,
+                materialDesignEnabled = settings.materialDesignEnabled,
+                materialYouEnabled = settings.materialYouEnabled,
                 dynamicAccentColor = settings.customThemeColor?.let { Color(it.toULong()) }
             ) {
                 MainAppContent(
@@ -320,7 +322,9 @@ fun MainAppContent(
                         onRescanMusic = { settingsViewModel.rescanLibrary() },
                         onSetFilterShortTracks = { settingsViewModel.setFilterShortTracks(it) },
                         onSetVibrationEnabled = { settingsViewModel.setVibrationEnabled(it) },
-                        onChooseScanFolder = onChooseFolder
+                        onChooseScanFolder = onChooseFolder,
+                        onSetMaterialDesignEnabled = { settingsViewModel.setMaterialDesignEnabled(it) },
+                        onSetMaterialYouEnabled = { settingsViewModel.setMaterialYouEnabled(it) }
                     )
                 }
 

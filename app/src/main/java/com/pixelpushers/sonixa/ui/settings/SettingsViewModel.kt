@@ -37,6 +37,14 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.setVibrationEnabled(enabled) }
     }
 
+    fun setMaterialDesignEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setMaterialDesignEnabled(enabled) }
+    }
+
+    fun setMaterialYouEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setMaterialYouEnabled(enabled) }
+    }
+
     fun setMatchAlbumColors(enabled: Boolean) {
         viewModelScope.launch { settingsRepository.setMatchAlbumColors(enabled) }
     }
