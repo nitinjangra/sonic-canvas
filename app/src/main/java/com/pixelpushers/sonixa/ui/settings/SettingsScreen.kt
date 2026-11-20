@@ -77,6 +77,8 @@ fun SettingsScreen(
     onChooseScanFolder: () -> Unit,
     onSetMaterialDesignEnabled: (Boolean) -> Unit,
     onSetMaterialYouEnabled: (Boolean) -> Unit,
+    onExportBackup: () -> Unit = {},
+    onRestoreBackup: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showThemeSheet by remember { mutableStateOf(false) }
@@ -254,6 +256,25 @@ fun SettingsScreen(
                             title = "Rescan music library",
                             subtitle = "Scan device for new or removed audio files",
                             onClick = onRescanMusic
+                        )
+                    }
+                }
+
+                // Backup & Restore Section
+                item {
+                    SettingsSectionHeader("BACKUP & RESTORE")
+                }
+                item {
+                    SettingsCard {
+                        SettingsRowClickable(
+                            title = "Export Backup",
+                            subtitle = "Save playlists, settings, and pinned items to a JSON file",
+                            onClick = onExportBackup
+                        )
+                        SettingsRowClickable(
+                            title = "Import / Restore Backup",
+                            subtitle = "Restore playlists, settings, and pinned items from a backup file",
+                            onClick = onRestoreBackup
                         )
                     }
                 }
