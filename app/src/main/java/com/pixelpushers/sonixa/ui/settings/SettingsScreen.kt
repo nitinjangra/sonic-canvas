@@ -71,6 +71,7 @@ fun SettingsScreen(
     onRescanMusic: () -> Unit,
     onSetFilterShortTracks: (Boolean) -> Unit,
     onSetVibrationEnabled: (Boolean) -> Unit,
+    onChooseScanFolder: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showThemeSheet by remember { mutableStateOf(false) }
@@ -214,6 +215,11 @@ fun SettingsScreen(
                             subtitle = "Ignore audio files in hidden folders (starting with .)",
                             checked = settings.excludeHiddenFolders,
                             onCheckedChange = onSetExcludeHiddenFolders
+                        )
+                        SettingsRowClickable(
+                            title = "Choose folders to scan",
+                            subtitle = "${settings.includedFolderPaths.size} custom folders selected",
+                            onClick = onChooseScanFolder
                         )
                         SettingsRowClickable(
                             title = "Manage skipped folders",

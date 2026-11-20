@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v1.0.0
 
 ---
 
+## [2.1.0] - 2026-03-31
+
+### Added
+- **Interactive UI Animations**:
+  - Interactive Play/Pause button on Now Playing screen featuring spring-based press scaling, elevation glow, and smooth scale-fade icon morphing.
+  - Animated SONIXA logo on the startup splash screen with breathing scale animation and system dark/light theme adaptation.
+- **Folder Selection & File Picker (SAF)**:
+  - Custom directory picking via Storage Access Framework (`Intent.ACTION_OPEN_DOCUMENT_TREE`) on first run and in Settings.
+  - Human-readable folder name and path formatting (`formatFolderNameAndPath`) for the Folders tab.
+- **Scanner & Rescan Optimizations**:
+  - Silent scanner cancellation returning cleanly to the Music Library page without error popups.
+  - Silent error recovery logging.
+- **Small Screen & Touch UX Enhancements**:
+  - Horizontal scrolling without scrollbars for folder labels and equalizer presets on small screen devices.
+  - Clean unnumbered audiophile fun fact notification titles.
+  - Official app renaming to **Sonixa** with package update to `com.pixelpushers.sonixa`.
+
 ## [2.0.0] - 2026-03-31
 
 ### Added

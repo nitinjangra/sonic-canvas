@@ -1,7 +1,9 @@
 package com.pixelpushers.sonixa
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -79,9 +81,26 @@ class MainActivity : ComponentActivity() {
         hasAudioPermissionState.value = audioGranted
     }
 
+    private var folderPickerLauncher: androidx.activity.result.ActivityResultLauncher<Uri?>? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val folderPickerLauncher = registerForActivityResult(
+            ActivityResultContracts.OpenDocumentTree()
+        ) { uri ->
+            if (uri != null) {
+                try {
+                    contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    val path = uri.path ?: ""
+                    settingsViewModel.addIncludedFolder(path)
+                    settingsViewModel.setHasScanned(false)
+                    libraryViewModel.scanMusic()
+                    settingsViewModel.setHasScanned(true)
+                } catch (_: Exception) {}
+            }
+        }
 
         checkAudioPermission()
 
@@ -109,7 +128,8 @@ class MainActivity : ComponentActivity() {
                     playlistsViewModel = playlistsViewModel,
                     searchViewModel = searchViewModel,
                     settingsViewModel = settingsViewModel,
-                    settings = settings
+                    settings = settings,
+                    onChooseFolder = { folderPickerLauncher.launch(null) }
                 )
             }
         }
@@ -152,7 +172,8 @@ fun MainAppContent(
     playlistsViewModel: PlaylistsViewModel,
     searchViewModel: SearchViewModel,
     settingsViewModel: SettingsViewModel,
-    settings: UserSettings
+    settings: UserSettings,
+    onChooseFolder: () -> Unit
 ) {
     val songs by libraryViewModel.songs.collectAsState()
     val scanProgress by libraryViewModel.scanProgress.collectAsState()
@@ -192,6 +213,7 @@ fun MainAppContent(
 
     if (showSplashScreen) {
         SplashScreen(
+            appTheme = settings.theme,
             onSplashFinished = { showSplashScreen = false }
         )
     } else if (!hasPermission || scanProgress.isScanning) {
@@ -200,7 +222,11 @@ fun MainAppContent(
             scanProgress = scanProgress,
             onRequestPermission = onRequestPermission,
             onContinueWithoutPermission = { },
-            onCancelScan = { libraryViewModel.cancelScan() }
+            onCancelScan = {
+                libraryViewModel.cancelScan()
+                settingsViewModel.setHasScanned(true)
+            },
+            onChooseFolder = onChooseFolder
         )
     } else {
         Scaffold(
@@ -293,7 +319,8 @@ fun MainAppContent(
                         onOpenEqualizer = { activeOverlay = ScreenOverlay.EQUALIZER },
                         onRescanMusic = { settingsViewModel.rescanLibrary() },
                         onSetFilterShortTracks = { settingsViewModel.setFilterShortTracks(it) },
-                        onSetVibrationEnabled = { settingsViewModel.setVibrationEnabled(it) }
+                        onSetVibrationEnabled = { settingsViewModel.setVibrationEnabled(it) },
+                        onChooseScanFolder = onChooseFolder
                     )
                 }
 

@@ -10,6 +10,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -24,13 +25,28 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.pixelpushers.sonixa.R
+import com.pixelpushers.sonixa.data.preferences.AppTheme
 import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
+    appTheme: AppTheme = AppTheme.SYSTEM,
     onSplashFinished: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isSystemDark = isSystemInDarkTheme()
+    val isDark = when (appTheme) {
+        AppTheme.SYSTEM -> isSystemDark
+        AppTheme.LIGHT -> false
+        AppTheme.DARK, AppTheme.BLACK -> true
+    }
+
+    val backgroundColor = when (appTheme) {
+        AppTheme.BLACK -> Color.Black
+        AppTheme.LIGHT -> Color(0xFFF5F7FA)
+        else -> if (isDark) Color(0xFF0F1115) else Color(0xFFF5F7FA)
+    }
+
     LaunchedEffect(Unit) {
         delay(2200)
         onSplashFinished()
@@ -39,7 +55,7 @@ fun SplashScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF0F1115)),
+            .background(backgroundColor),
         contentAlignment = Alignment.Center
     ) {
         Box(

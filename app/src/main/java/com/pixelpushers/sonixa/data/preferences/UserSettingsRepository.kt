@@ -51,7 +51,8 @@ data class UserSettings(
     val filterShortTracks: Boolean = true,
     val hasScanned: Boolean = false,
     val nextFunFactHour: Int = 1,
-    val vibrationEnabled: Boolean = true
+    val vibrationEnabled: Boolean = true,
+    val includedFolderPaths: Set<String> = emptySet()
 )
 
 @Singleton
@@ -81,6 +82,7 @@ class UserSettingsRepository @Inject constructor(
         val HAS_SCANNED = booleanPreferencesKey("has_scanned")
         val NEXT_FUN_FACT_HOUR = intPreferencesKey("next_fun_fact_hour")
         val VIBRATION_ENABLED = booleanPreferencesKey("vibration_enabled")
+        val INCLUDED_FOLDER_PATHS = stringSetPreferencesKey("included_folder_paths")
     }
 
     val userSettingsFlow: Flow<UserSettings> = context.dataStore.data.map { prefs ->
@@ -114,8 +116,23 @@ class UserSettingsRepository @Inject constructor(
             filterShortTracks = prefs[Keys.FILTER_SHORT_TRACKS] ?: true,
             hasScanned = prefs[Keys.HAS_SCANNED] ?: false,
             nextFunFactHour = prefs[Keys.NEXT_FUN_FACT_HOUR] ?: 1,
-            vibrationEnabled = prefs[Keys.VIBRATION_ENABLED] ?: true
+            vibrationEnabled = prefs[Keys.VIBRATION_ENABLED] ?: true,
+            includedFolderPaths = prefs[Keys.INCLUDED_FOLDER_PATHS] ?: emptySet()
         )
+    }
+
+    suspend fun addIncludedFolder(path: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[Keys.INCLUDED_FOLDER_PATHS] ?: emptySet()
+            prefs[Keys.INCLUDED_FOLDER_PATHS] = current + path
+        }
+    }
+
+    suspend fun removeIncludedFolder(path: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[Keys.INCLUDED_FOLDER_PATHS] ?: emptySet()
+            prefs[Keys.INCLUDED_FOLDER_PATHS] = current - path
+        }
     }
 
     suspend fun setVibrationEnabled(enabled: Boolean) {

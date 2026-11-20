@@ -144,7 +144,32 @@ class SettingsViewModel @Inject constructor(
             scanner.scanMusic(
                 minDurationMs = if (settings.value.filterShortTracks) 30000L else 0L,
                 excludeHiddenFolders = settings.value.excludeHiddenFolders,
-                skippedFolderPaths = settings.value.skippedFolderPaths
+                skippedFolderPaths = settings.value.skippedFolderPaths,
+                includedFolderPaths = settings.value.includedFolderPaths
+            )
+        }
+    }
+
+    fun addIncludedFolder(path: String) {
+        viewModelScope.launch {
+            settingsRepository.addIncludedFolder(path)
+            scanner.scanMusic(
+                minDurationMs = if (settings.value.filterShortTracks) 30000L else 0L,
+                excludeHiddenFolders = settings.value.excludeHiddenFolders,
+                skippedFolderPaths = settings.value.skippedFolderPaths,
+                includedFolderPaths = settings.value.includedFolderPaths + path
+            )
+        }
+    }
+
+    fun removeIncludedFolder(path: String) {
+        viewModelScope.launch {
+            settingsRepository.removeIncludedFolder(path)
+            scanner.scanMusic(
+                minDurationMs = if (settings.value.filterShortTracks) 30000L else 0L,
+                excludeHiddenFolders = settings.value.excludeHiddenFolders,
+                skippedFolderPaths = settings.value.skippedFolderPaths,
+                includedFolderPaths = settings.value.includedFolderPaths - path
             )
         }
     }

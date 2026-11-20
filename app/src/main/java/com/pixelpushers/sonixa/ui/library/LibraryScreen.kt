@@ -12,6 +12,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -1342,6 +1344,24 @@ fun ArtistsGrid(songs: List<SongEntity>) {
     }
 }
 
+fun formatFolderNameAndPath(rawPath: String): Pair<String, String> {
+    if (rawPath.isBlank()) return Pair("Music Library", "/Internal Storage")
+
+    val normalized = rawPath.replace("/storage/emulated/0", "Internal Storage")
+        .replace("primary:", "Internal Storage/")
+        .trimEnd('/')
+
+    val lastSegment = normalized.substringAfterLast('/')
+    val folderName = when {
+        lastSegment.isBlank() || lastSegment == "0" -> "Music Library"
+        else -> lastSegment
+    }
+
+    val displayPath = if (normalized.startsWith("Internal Storage")) "/$normalized" else normalized
+
+    return Pair(folderName, displayPath)
+}
+
 @Composable
 fun FoldersList(
     songs: List<SongEntity>,
@@ -1350,9 +1370,10 @@ fun FoldersList(
     val folders = remember(songs) {
         songs.groupBy { it.folderPath }
             .map { (path, list) ->
+                val (name, displayPath) = formatFolderNameAndPath(path)
                 FolderItem(
-                    folderPath = path,
-                    folderName = File(path).name.ifEmpty { path },
+                    folderPath = displayPath,
+                    folderName = name,
                     songCount = list.size
                 )
             }
@@ -1385,20 +1406,33 @@ fun FoldersList(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                Column {
-                    Text(
-                        text = folder.folderName,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Text(
-                        text = "${folder.songCount} songs • ${folder.folderPath}",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                    ) {
+                        Text(
+                            text = folder.folderName,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            maxLines = 1
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                    ) {
+                        Text(
+                            text = "${folder.songCount} songs • ${folder.folderPath}",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
                 }
             }
         }
@@ -1413,9 +1447,10 @@ fun FoldersGrid(
     val folders = remember(songs) {
         songs.groupBy { it.folderPath }
             .map { (path, list) ->
+                val (name, displayPath) = formatFolderNameAndPath(path)
                 FolderItem(
-                    folderPath = path,
-                    folderName = File(path).name.ifEmpty { path },
+                    folderPath = displayPath,
+                    folderName = name,
                     songCount = list.size
                 )
             }
@@ -1454,14 +1489,19 @@ fun FoldersGrid(
 
                     Spacer(modifier = Modifier.height(10.dp))
 
-                    Text(
-                        text = folder.folderName,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                    ) {
+                        Text(
+                            text = folder.folderName,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            maxLines = 1
+                        )
+                    }
 
                     Text(
                         text = "${folder.songCount} songs",

@@ -53,6 +53,7 @@ fun PermissionAndScanScreen(
     onRequestPermission: () -> Unit,
     onContinueWithoutPermission: () -> Unit,
     onCancelScan: () -> Unit = {},
+    onChooseFolder: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -116,6 +117,22 @@ fun PermissionAndScanScreen(
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedButton(
+                    onClick = onChooseFolder,
+                    shape = RoundedCornerShape(24.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                ) {
+                    Text(
+                        text = "Choose Folders to Scan",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 }
 
