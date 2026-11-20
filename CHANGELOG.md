@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v1.0.0
 
 ---
 
+## [2.0.0] - 2026-03-31
+
+### Added
+- **Real Audio Streaming Engine**:
+  - Connected `NowPlayingViewModel` to Media3 ExoPlayer via `MusicPlayerManager` for real audiophile audio output.
+- **Apple Music-Style UI & Transitions**:
+  - Fluid Apple Music-style scale-fade and slide-fade transitions on the mini player pill (`MiniPlayerPill`).
+  - Custom SONIXA launcher icon with dark mode and Android 13+ Material You monochrome themed icon support.
+  - Enhanced glassmorphism design with multi-stop translucency gradients and specular reflection highlights (`GlassPill`).
+- **Advanced Audio Effects & Visualizer**:
+  - Real-time audio frequency spectrum visualizer canvas (`VisualizerSpectrumCanvas`) on the Equalizer screen.
+  - Animated waveform icon (`WaveformIcon`) with active audio playback pulsing.
+  - Advanced Repeat modes supporting **Off**, **Loop (Repeat All)**, and **Repeat 1** (`RepeatOne`) with dynamic icon states.
+- **Gestures & Navigation UX**:
+  - Swipe-down gesture minimization on the Now Playing screen.
+  - Full support for hardware back buttons and gesture navigation across all overlays and sub-screens with `BackHandler`.
+  - Edge-to-edge system gesture bar padding (`navigationBarsPadding()`).
+- **Interactive Controls & Haptics**:
+  - Configurable haptic feedback / vibration support on playback controls with a dedicated settings toggle.
+- **Reactive Playlists & Smart Library**:
+  - Real-time reactive custom playlist song count synchronization.
+  - Optimized app startup scanning (scans automatically only on first launch/permission grant).
+- **Architecture & Reliability**:
+  - Repository pattern architectural refactoring using Dagger Hilt `@Binds` for Song, Playlist, and Lyrics repositories.
+  - Local crash logging (`LocalLogger`) and automatic restart recovery notifications.
+  - Exponentially increasing intervals ($1, 2, 4, 8, 16, 32 \dots$ hours) for audiophile fun facts based on lifetime app usage.
+
 ## [1.0.0] - 2026-03-31
 
 ### Added
@@ -24,14 +51,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v1.0.0
 - **Audio Effects & Equalizer**:
   - 5-band frequency equalizer with vertical sliders and preset pill chips (*Flat*, *Rock*, *Pop*, *Jazz*, *Bass*).
   - Adjustable Bass Boost and Virtualizer effects with live percentage indicators.
-  - Real-time audio frequency spectrum visualizer (`WaveformIcon`) with dynamic animations.
-- **Playback Modes & Controls**:
-  - Advanced Repeat modes supporting **Off**, **Loop (Repeat All)**, and **Repeat 1** (`RepeatOne`), with dynamic icon states.
-  - Shuffle and queue management.
-- **Smart Library Management & Utilities**:
-  - MediaStore audio scanner with hidden folder exclusion and customizable track duration filters.
-  - Custom playlists, Favorites, Recently Played, and Most Played auto-playlists.
-  - Sleep timer with a revolving animated hourglass indicator.
 - **Production Reliability & Privacy**:
   - 100% offline-first privacy architecture with zero network tracking or cloud telemetry.
   - Local crash logging (`LocalLogger`) capturing unhandled exceptions and stacktraces to `[FilesDir]/Sonixa_Debug_Log.txt`.
