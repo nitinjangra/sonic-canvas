@@ -29,6 +29,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -76,6 +77,7 @@ fun SettingsScreen(
     onSetVibrationEnabled: (Boolean) -> Unit,
     onSetPauseOnZeroVolume: (Boolean) -> Unit = {},
     onChooseScanFolder: () -> Unit,
+    onChooseSkippedFolder: () -> Unit = {},
     onSetMaterialDesignEnabled: (Boolean) -> Unit,
     onSetMaterialYouEnabled: (Boolean) -> Unit,
     onExportBackup: () -> Unit = {},
@@ -342,7 +344,10 @@ fun SettingsScreen(
         if (showSkippedFoldersSheet) {
             SkippedFoldersSheet(
                 skippedFolders = settings.skippedFolderPaths,
-                onAddFolder = onAddSkippedFolder,
+                onChooseFolderToSkip = {
+                    showSkippedFoldersSheet = false
+                    onChooseSkippedFolder()
+                },
                 onRemoveFolder = onRemoveSkippedFolder,
                 onDismiss = { showSkippedFoldersSheet = false }
             )
@@ -652,12 +657,10 @@ fun DefaultThumbnailSelectionSheet(
 @Composable
 fun SkippedFoldersSheet(
     skippedFolders: Set<String>,
-    onAddFolder: (String) -> Unit,
+    onChooseFolderToSkip: () -> Unit,
     onRemoveFolder: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var newFolderPath by remember { mutableStateOf("") }
-
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface
@@ -674,29 +677,20 @@ fun SkippedFoldersSheet(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
-                value = newFolderPath,
-                onValueChange = { newFolderPath = it },
-                placeholder = { Text("e.g. /storage/emulated/0/Music/Ringtones") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = {
-                    if (newFolderPath.isNotBlank()) {
-                        onAddFolder(newFolderPath.trim())
-                        newFolderPath = ""
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                modifier = Modifier.fillMaxWidth()
+            OutlinedButton(
+                onClick = onChooseFolderToSkip,
+                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
             ) {
-                Text("Add Folder Path", color = Color.Black)
+                Text(
+                    text = "Select Folder to Skip",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -711,7 +705,7 @@ fun SkippedFoldersSheet(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp)
+                        .height(240.dp)
                 ) {
                     items(skippedFolders.toList()) { path ->
                         val (name, displayPath) = formatFolderNameAndPath(path)

@@ -17,6 +17,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.ui.geometry.Offset
@@ -128,6 +130,19 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        val skippedFolderPickerLauncher = registerForActivityResult(
+            ActivityResultContracts.OpenDocumentTree()
+        ) { uri ->
+            if (uri != null) {
+                try {
+                    contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    val path = uri.path ?: ""
+                    settingsViewModel.addSkippedFolder(path)
+                    libraryViewModel.scanMusic()
+                } catch (_: Exception) {}
+            }
+        }
+
         checkAudioPermission()
 
         setContent {
@@ -157,6 +172,7 @@ class MainActivity : ComponentActivity() {
                     settingsViewModel = settingsViewModel,
                     settings = settings,
                     onChooseFolder = { folderPickerLauncher.launch(null) },
+                    onChooseSkippedFolder = { skippedFolderPickerLauncher.launch(null) },
                     onExportBackup = { exportBackupLauncher.launch("Sonixa_Backup.json") },
                     onRestoreBackup = { restoreBackupLauncher.launch(arrayOf("application/json", "*/*")) }
                 )
@@ -203,6 +219,7 @@ fun MainAppContent(
     settingsViewModel: SettingsViewModel,
     settings: UserSettings,
     onChooseFolder: () -> Unit,
+    onChooseSkippedFolder: () -> Unit = {},
     onExportBackup: () -> Unit = {},
     onRestoreBackup: () -> Unit = {}
 ) {
@@ -388,6 +405,7 @@ fun MainAppContent(
                         onSetFilterShortTracks = { settingsViewModel.setFilterShortTracks(it) },
                         onSetVibrationEnabled = { settingsViewModel.setVibrationEnabled(it) },
                         onChooseScanFolder = onChooseFolder,
+                        onChooseSkippedFolder = onChooseSkippedFolder,
                         onSetMaterialDesignEnabled = { settingsViewModel.setMaterialDesignEnabled(it) },
                         onSetMaterialYouEnabled = { settingsViewModel.setMaterialYouEnabled(it) },
                         onExportBackup = onExportBackup,
@@ -440,79 +458,102 @@ fun MainAppContent(
                     }
                 }
 
-                // Fullscreen Overlays
-                when (activeOverlay) {
-                    ScreenOverlay.NOW_PLAYING -> NowPlayingScreen(
-                        queue = playerState.queue,
-                        currentIndex = playerState.currentIndex,
-                        isPlaying = playerState.isPlaying,
-                        currentPositionMs = playerState.currentPositionMs,
-                        totalDurationMs = playerState.totalDurationMs,
-                        isShuffleEnabled = playerState.isShuffleEnabled,
-                        isRepeatEnabled = playerState.isRepeatEnabled,
-                        repeatMode = playerState.repeatMode,
-                        isSleepTimerActive = playerState.isSleepTimerActive,
-                        sleepTimerRemainingMs = playerState.sleepTimerRemainingMs,
-                        isEqualizerEnabled = eqState.isEnabled,
-                        lyricsState = lyricsState,
-                        onSaveLyrics = { id, text -> lyricsViewModel.saveLyrics(id, text) },
-                        onSeekToLyric = { pos -> nowPlayingViewModel.seekTo(pos) },
-                        onTogglePlayPause = { nowPlayingViewModel.togglePlayPause() },
-                        onSeekTo = { nowPlayingViewModel.seekTo(it) },
-                        onSkipToNext = { nowPlayingViewModel.skipToNext() },
-                        onSkipToPrevious = { nowPlayingViewModel.skipToPrevious() },
-                        onToggleFavorite = { nowPlayingViewModel.toggleFavorite() },
-                        onToggleShuffle = { nowPlayingViewModel.toggleShuffle() },
-                        onToggleRepeat = { nowPlayingViewModel.toggleRepeat() },
-                        onOpenAddToPlaylist = { showAddToPlaylistSheet = true },
-                        onSongSelected = { index ->
-                            if (index in playerState.queue.indices) {
-                                nowPlayingViewModel.playSong(playerState.queue[index], playerState.queue)
-                            }
-                        },
-                        onDismiss = { activeOverlay = ScreenOverlay.NONE },
-                        onOpenEqualizer = { activeOverlay = ScreenOverlay.EQUALIZER },
-                        onOpenSleepTimer = { showSleepTimerSheet = true },
-                        onOpenLyrics = {
-                            playerState.currentSong?.let { lyricsViewModel.loadLyricsForSong(it.id) }
-                            activeOverlay = ScreenOverlay.LYRICS
-                        },
-                        onOpenQueue = { activeOverlay = ScreenOverlay.QUEUE }
-                    )
+                // Fullscreen Overlays with Smooth Bounce Transition on Minimize
+                AnimatedVisibility(
+                    visible = activeOverlay != ScreenOverlay.NONE,
+                    enter = slideInVertically(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessLow
+                        )
+                    ) { it } + scaleIn(
+                        initialScale = 0.9f,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(200)),
+                    exit = slideOutVertically(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessLow
+                        )
+                    ) { it } + scaleOut(
+                        targetScale = 0.85f,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(200)),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    when (activeOverlay) {
+                        ScreenOverlay.NOW_PLAYING -> NowPlayingScreen(
+                            queue = playerState.queue,
+                            currentIndex = playerState.currentIndex,
+                            isPlaying = playerState.isPlaying,
+                            currentPositionMs = playerState.currentPositionMs,
+                            totalDurationMs = playerState.totalDurationMs,
+                            isShuffleEnabled = playerState.isShuffleEnabled,
+                            isRepeatEnabled = playerState.isRepeatEnabled,
+                            repeatMode = playerState.repeatMode,
+                            isSleepTimerActive = playerState.isSleepTimerActive,
+                            sleepTimerRemainingMs = playerState.sleepTimerRemainingMs,
+                            isEqualizerEnabled = eqState.isEnabled,
+                            lyricsState = lyricsState,
+                            onSaveLyrics = { id, text -> lyricsViewModel.saveLyrics(id, text) },
+                            onSeekToLyric = { pos -> nowPlayingViewModel.seekTo(pos) },
+                            onTogglePlayPause = { nowPlayingViewModel.togglePlayPause() },
+                            onSeekTo = { nowPlayingViewModel.seekTo(it) },
+                            onSkipToNext = { nowPlayingViewModel.skipToNext() },
+                            onSkipToPrevious = { nowPlayingViewModel.skipToPrevious() },
+                            onToggleFavorite = { nowPlayingViewModel.toggleFavorite() },
+                            onToggleShuffle = { nowPlayingViewModel.toggleShuffle() },
+                            onToggleRepeat = { nowPlayingViewModel.toggleRepeat() },
+                            onOpenAddToPlaylist = { showAddToPlaylistSheet = true },
+                            onSongSelected = { index ->
+                                if (index in playerState.queue.indices) {
+                                    nowPlayingViewModel.playSong(playerState.queue[index], playerState.queue)
+                                }
+                            },
+                            onDismiss = { activeOverlay = ScreenOverlay.NONE },
+                            onOpenEqualizer = { activeOverlay = ScreenOverlay.EQUALIZER },
+                            onOpenSleepTimer = { showSleepTimerSheet = true },
+                            onOpenLyrics = {
+                                playerState.currentSong?.let { lyricsViewModel.loadLyricsForSong(it.id) }
+                                activeOverlay = ScreenOverlay.LYRICS
+                            },
+                            onOpenQueue = { activeOverlay = ScreenOverlay.QUEUE }
+                        )
 
-                    ScreenOverlay.LYRICS -> LyricsScreen(
-                        song = playerState.currentSong,
-                        uiState = lyricsState,
-                        currentPositionMs = playerState.currentPositionMs,
-                        onSeekTo = { nowPlayingViewModel.seekTo(it) },
-                        onSaveLyrics = { id, text -> lyricsViewModel.saveLyrics(id, text) },
-                        onBack = { activeOverlay = ScreenOverlay.NOW_PLAYING }
-                    )
+                        ScreenOverlay.LYRICS -> LyricsScreen(
+                            song = playerState.currentSong,
+                            uiState = lyricsState,
+                            currentPositionMs = playerState.currentPositionMs,
+                            onSeekTo = { nowPlayingViewModel.seekTo(it) },
+                            onSaveLyrics = { id, text -> lyricsViewModel.saveLyrics(id, text) },
+                            onBack = { activeOverlay = ScreenOverlay.NOW_PLAYING }
+                        )
 
-                    ScreenOverlay.EQUALIZER -> EqualizerScreen(
-                        state = eqState,
-                        onToggleEnabled = { equalizerViewModel.toggleEnabled(it) },
-                        onBandLevelChange = { b, l -> equalizerViewModel.setBandLevel(b, l) },
-                        onPresetSelect = { equalizerViewModel.selectPreset(it) },
-                        onBassBoostChange = { equalizerViewModel.setBassBoost(it) },
-                        onVirtualizerChange = { equalizerViewModel.setVirtualizer(it) },
-                        onBack = { activeOverlay = ScreenOverlay.NOW_PLAYING }
-                    )
+                        ScreenOverlay.EQUALIZER -> EqualizerScreen(
+                            state = eqState,
+                            onToggleEnabled = { equalizerViewModel.toggleEnabled(it) },
+                            onBandLevelChange = { b, l -> equalizerViewModel.setBandLevel(b, l) },
+                            onPresetSelect = { equalizerViewModel.selectPreset(it) },
+                            onBassBoostChange = { equalizerViewModel.setBassBoost(it) },
+                            onVirtualizerChange = { equalizerViewModel.setVirtualizer(it) },
+                            onBack = { activeOverlay = ScreenOverlay.NOW_PLAYING }
+                        )
 
-                    ScreenOverlay.QUEUE -> QueueScreen(
-                        queue = playerState.queue,
-                        currentIndex = playerState.currentIndex,
-                        onSongSelect = { index ->
-                            if (index in playerState.queue.indices) {
-                                nowPlayingViewModel.playSong(playerState.queue[index], playerState.queue)
-                            }
-                        },
-                        onRemoveFromQueue = { },
-                        onClearQueue = { },
-                        onBack = { activeOverlay = ScreenOverlay.NOW_PLAYING }
-                    )
+                        ScreenOverlay.QUEUE -> QueueScreen(
+                            queue = playerState.queue,
+                            currentIndex = playerState.currentIndex,
+                            onSongSelect = { index ->
+                                if (index in playerState.queue.indices) {
+                                    nowPlayingViewModel.playSong(playerState.queue[index], playerState.queue)
+                                }
+                            },
+                            onRemoveFromQueue = { },
+                            onClearQueue = { },
+                            onBack = { activeOverlay = ScreenOverlay.NOW_PLAYING }
+                        )
 
-                    ScreenOverlay.NONE -> {}
+                        ScreenOverlay.NONE -> {}
+                    }
                 }
 
                 // Sleep Timer Sheet

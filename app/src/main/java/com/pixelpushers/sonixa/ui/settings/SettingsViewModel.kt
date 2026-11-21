@@ -102,22 +102,14 @@ class SettingsViewModel @Inject constructor(
     fun setFilterShortTracks(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setFilterShortTracks(enabled)
-            scanner.scanMusic(
-                minDurationMs = if (enabled) 30000L else 0L,
-                excludeHiddenFolders = settings.value.excludeHiddenFolders,
-                skippedFolderPaths = settings.value.skippedFolderPaths
-            )
+            rescanLibrary()
         }
     }
 
     fun setExcludeHiddenFolders(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setExcludeHiddenFolders(enabled)
-            scanner.scanMusic(
-                minDurationMs = if (settings.value.filterShortTracks) 30000L else 0L,
-                excludeHiddenFolders = enabled,
-                skippedFolderPaths = settings.value.skippedFolderPaths
-            )
+            rescanLibrary()
         }
     }
 
@@ -159,59 +151,42 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun addSkippedFolder(path: String) {
-        viewModelScope.launch {
-            settingsRepository.addSkippedFolder(path)
-            scanner.scanMusic(
-                minDurationMs = if (settings.value.filterShortTracks) 30000L else 0L,
-                excludeHiddenFolders = settings.value.excludeHiddenFolders,
-                skippedFolderPaths = settings.value.skippedFolderPaths + path
-            )
-        }
-    }
-
-    fun removeSkippedFolder(path: String) {
-        viewModelScope.launch {
-            settingsRepository.removeSkippedFolder(path)
-            scanner.scanMusic(
-                minDurationMs = if (settings.value.filterShortTracks) 30000L else 0L,
-                excludeHiddenFolders = settings.value.excludeHiddenFolders,
-                skippedFolderPaths = settings.value.skippedFolderPaths - path
-            )
-        }
-    }
-
-    fun rescanLibrary() {
-        viewModelScope.launch {
-            scanner.scanMusic(
-                minDurationMs = if (settings.value.filterShortTracks) 30000L else 0L,
-                excludeHiddenFolders = settings.value.excludeHiddenFolders,
-                skippedFolderPaths = settings.value.skippedFolderPaths,
-                includedFolderPaths = settings.value.includedFolderPaths
-            )
-        }
-    }
-
     fun addIncludedFolder(path: String) {
         viewModelScope.launch {
             settingsRepository.addIncludedFolder(path)
-            scanner.scanMusic(
-                minDurationMs = if (settings.value.filterShortTracks) 30000L else 0L,
-                excludeHiddenFolders = settings.value.excludeHiddenFolders,
-                skippedFolderPaths = settings.value.skippedFolderPaths,
-                includedFolderPaths = settings.value.includedFolderPaths + path
-            )
+            rescanLibrary()
         }
     }
 
     fun removeIncludedFolder(path: String) {
         viewModelScope.launch {
             settingsRepository.removeIncludedFolder(path)
+            rescanLibrary()
+        }
+    }
+
+    fun addSkippedFolder(path: String) {
+        viewModelScope.launch {
+            settingsRepository.addSkippedFolder(path)
+            rescanLibrary()
+        }
+    }
+
+    fun removeSkippedFolder(path: String) {
+        viewModelScope.launch {
+            settingsRepository.removeSkippedFolder(path)
+            rescanLibrary()
+        }
+    }
+
+    fun rescanLibrary() {
+        viewModelScope.launch {
+            val s = settings.value
             scanner.scanMusic(
-                minDurationMs = if (settings.value.filterShortTracks) 30000L else 0L,
-                excludeHiddenFolders = settings.value.excludeHiddenFolders,
-                skippedFolderPaths = settings.value.skippedFolderPaths,
-                includedFolderPaths = settings.value.includedFolderPaths - path
+                minDurationMs = if (s.filterShortTracks) 30000L else 0L,
+                excludeHiddenFolders = s.excludeHiddenFolders,
+                skippedFolderPaths = s.skippedFolderPaths,
+                includedFolderPaths = s.includedFolderPaths
             )
         }
     }
