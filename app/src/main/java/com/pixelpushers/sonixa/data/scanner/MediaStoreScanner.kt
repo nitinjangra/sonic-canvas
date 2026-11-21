@@ -20,6 +20,14 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
+fun normalizePath(path: String): String {
+    return path.replace("/tree/primary:", "/storage/emulated/0/")
+        .replace("/tree/", "/")
+        .replace("primary:", "/storage/emulated/0/")
+        .replace("Internal Storage", "/storage/emulated/0")
+        .trimEnd('/')
+}
+
 data class ScanProgress(
     val isScanning: Boolean = false,
     val scannedCount: Int = 0,
@@ -62,7 +70,18 @@ class MediaStoreScanner @Inject constructor(
             MediaStore.Audio.Media.YEAR
         )
 
-        val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0 AND ${MediaStore.Audio.Media.DURATION} >= ?"
+        val selection = """
+            (${MediaStore.Audio.Media.IS_MUSIC} != 0 
+             OR ${MediaStore.Audio.Media.MIME_TYPE} LIKE '%audio%' 
+             OR ${MediaStore.Audio.Media.DATA} LIKE '%.m4a'
+             OR ${MediaStore.Audio.Media.DATA} LIKE '%.mp4'
+             OR ${MediaStore.Audio.Media.DATA} LIKE '%.flac'
+             OR ${MediaStore.Audio.Media.DATA} LIKE '%.mp3'
+             OR ${MediaStore.Audio.Media.DATA} LIKE '%.wav'
+             OR ${MediaStore.Audio.Media.DATA} LIKE '%.aac'
+             OR ${MediaStore.Audio.Media.DATA} LIKE '%.ogg')
+            AND ${MediaStore.Audio.Media.DURATION} >= ?
+        """.trimIndent()
         val selectionArgs = arrayOf(minDurationMs.toString())
         val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
 
@@ -119,7 +138,15 @@ class MediaStoreScanner @Inject constructor(
 
                     // Check explicit included folder paths if specified
                     if (includedFolderPaths.isNotEmpty()) {
-                        if (!includedFolderPaths.any { folderPath.startsWith(it, ignoreCase = true) }) {
+                        val normalizedFolderPath = normalizePath(folderPath)
+                        val matchesIncluded = includedFolderPaths.any { inc ->
+                            val normalizedInc = normalizePath(inc)
+                            val folderLeaf = inc.substringAfterLast(":").substringAfterLast("/").trim()
+                            normalizedFolderPath.startsWith(normalizedInc, ignoreCase = true) ||
+                            normalizedInc.startsWith(normalizedFolderPath, ignoreCase = true) ||
+                            (folderLeaf.isNotEmpty() && folderPath.contains(folderLeaf, ignoreCase = true))
+                        }
+                        if (!matchesIncluded) {
                             continue
                         }
                     }

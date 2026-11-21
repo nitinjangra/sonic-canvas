@@ -1,5 +1,6 @@
 package com.pixelpushers.sonixa.ui.settings
 
+import com.pixelpushers.sonixa.ui.components.formatFolderNameAndPath
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,6 +29,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -42,6 +44,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -71,7 +75,13 @@ fun SettingsScreen(
     onRescanMusic: () -> Unit,
     onSetFilterShortTracks: (Boolean) -> Unit,
     onSetVibrationEnabled: (Boolean) -> Unit,
+    onSetPauseOnZeroVolume: (Boolean) -> Unit = {},
     onChooseScanFolder: () -> Unit,
+    onChooseSkippedFolder: () -> Unit = {},
+    onSetMaterialDesignEnabled: (Boolean) -> Unit,
+    onSetMaterialYouEnabled: (Boolean) -> Unit,
+    onExportBackup: () -> Unit = {},
+    onRestoreBackup: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showThemeSheet by remember { mutableStateOf(false) }
@@ -129,7 +139,26 @@ fun SettingsScreen(
                             title = "Match album artwork colors",
                             subtitle = "Adapt accent color to current playing track",
                             checked = settings.matchAlbumColors,
+                            vibrationEnabled = settings.vibrationEnabled,
                             onCheckedChange = onSetMatchAlbumColors
+                        )
+                        SettingsRowSwitch(
+                            title = "Material Design system",
+                            subtitle = "Enable Material 3 components across the app",
+                            checked = settings.materialDesignEnabled,
+                            vibrationEnabled = settings.vibrationEnabled,
+                            onCheckedChange = onSetMaterialDesignEnabled
+                        )
+                        SettingsRowSwitch(
+                            title = "Material You dynamic color",
+                            subtitle = "Use wallpaper-based dynamic theming (M3 sub-toggle)",
+                            checked = settings.materialYouEnabled && settings.materialDesignEnabled,
+                            vibrationEnabled = settings.vibrationEnabled,
+                            onCheckedChange = {
+                                if (settings.materialDesignEnabled) {
+                                    onSetMaterialYouEnabled(it)
+                                }
+                            }
                         )
                     }
                 }
@@ -161,6 +190,13 @@ fun SettingsScreen(
                             subtitle = "Pause playback when headphones or Bluetooth disconnect",
                             checked = settings.pauseOnAudioDisconnect,
                             onCheckedChange = onSetPauseOnAudioDisconnect
+                        )
+                        SettingsRowSwitch(
+                            title = "Pause when media volume is zero",
+                            subtitle = "Automatically pause playback when device volume is muted",
+                            checked = settings.pauseOnZeroVolume,
+                            vibrationEnabled = settings.vibrationEnabled,
+                            onCheckedChange = onSetPauseOnZeroVolume
                         )
                         SettingsRowSwitch(
                             title = "Gapless playback",
@@ -234,7 +270,25 @@ fun SettingsScreen(
                     }
                 }
 
-                // About Section
+                // Backup & Restore Section
+                item {
+                    SettingsSectionHeader("BACKUP & RESTORE")
+                }
+                item {
+                    SettingsCard {
+                        SettingsRowClickable(
+                            title = "Export Backup",
+                            subtitle = "Save playlists, settings, and pinned items to a JSON file",
+                            onClick = onExportBackup
+                        )
+                        SettingsRowClickable(
+                            title = "Import / Restore Backup",
+                            subtitle = "Restore playlists, settings, and pinned items from a backup file",
+                            onClick = onRestoreBackup
+                        )
+                    }
+                }
+
                 item {
                     SettingsSectionHeader("ABOUT")
                 }
@@ -242,17 +296,22 @@ fun SettingsScreen(
                     SettingsCard {
                         SettingsRowClickable(
                             title = "Sonixa",
-                            subtitle = "Version 1.0.0 (High-Res FLAC Audio Player)",
+                            subtitle = "Version 2.1.0 (High-Res Audio Player)",
                             onClick = { }
                         )
                         SettingsRowClickable(
                             title = "Audio Engine",
-                            subtitle = "Media3 ExoPlayer with direct FLAC & bit-depth decoding",
+                            subtitle = "Media3 ExoPlayer with direct high-res bit-depth decoding",
                             onClick = { }
                         )
                         SettingsRowClickable(
                             title = "Privacy & Storage",
                             subtitle = "100% offline — Your music never leaves your device",
+                            onClick = { }
+                        )
+                        SettingsRowClickable(
+                            title = "Made with ❤️ in Bharat for Audiophiles",
+                            subtitle = "Crafted for high-resolution offline music enjoyment",
                             onClick = { }
                         )
                     }
@@ -285,7 +344,10 @@ fun SettingsScreen(
         if (showSkippedFoldersSheet) {
             SkippedFoldersSheet(
                 skippedFolders = settings.skippedFolderPaths,
-                onAddFolder = onAddSkippedFolder,
+                onChooseFolderToSkip = {
+                    showSkippedFoldersSheet = false
+                    onChooseSkippedFolder()
+                },
                 onRemoveFolder = onRemoveSkippedFolder,
                 onDismiss = { showSkippedFoldersSheet = false }
             )
@@ -362,11 +424,18 @@ fun SettingsRowSwitch(
     title: String,
     subtitle: String,
     checked: Boolean,
+    vibrationEnabled: Boolean = true,
     onCheckedChange: (Boolean) -> Unit
 ) {
+    val haptic = LocalHapticFeedback.current
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable {
+                if (vibrationEnabled) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onCheckedChange(!checked)
+            }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -387,7 +456,10 @@ fun SettingsRowSwitch(
         Spacer(modifier = Modifier.width(12.dp))
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange,
+            onCheckedChange = {
+                if (vibrationEnabled) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onCheckedChange(it)
+            },
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.Black,
                 checkedTrackColor = MaterialTheme.colorScheme.primary
@@ -585,12 +657,10 @@ fun DefaultThumbnailSelectionSheet(
 @Composable
 fun SkippedFoldersSheet(
     skippedFolders: Set<String>,
-    onAddFolder: (String) -> Unit,
+    onChooseFolderToSkip: () -> Unit,
     onRemoveFolder: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var newFolderPath by remember { mutableStateOf("") }
-
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.surface
@@ -607,29 +677,20 @@ fun SkippedFoldersSheet(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
-                value = newFolderPath,
-                onValueChange = { newFolderPath = it },
-                placeholder = { Text("e.g. /storage/emulated/0/Music/Ringtones") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = {
-                    if (newFolderPath.isNotBlank()) {
-                        onAddFolder(newFolderPath.trim())
-                        newFolderPath = ""
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                modifier = Modifier.fillMaxWidth()
+            OutlinedButton(
+                onClick = onChooseFolderToSkip,
+                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
             ) {
-                Text("Add Folder Path", color = Color.Black)
+                Text(
+                    text = "Select Folder to Skip",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -644,9 +705,10 @@ fun SkippedFoldersSheet(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp)
+                        .height(240.dp)
                 ) {
                     items(skippedFolders.toList()) { path ->
+                        val (name, displayPath) = formatFolderNameAndPath(path)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -654,12 +716,19 @@ fun SkippedFoldersSheet(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = path,
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.weight(1f)
-                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = name,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = displayPath,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                             TextButton(onClick = { onRemoveFolder(path) }) {
                                 Text("Remove", color = MaterialTheme.colorScheme.error)
                             }

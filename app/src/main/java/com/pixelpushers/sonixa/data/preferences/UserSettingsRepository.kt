@@ -52,7 +52,15 @@ data class UserSettings(
     val hasScanned: Boolean = false,
     val nextFunFactHour: Int = 1,
     val vibrationEnabled: Boolean = true,
-    val includedFolderPaths: Set<String> = emptySet()
+    val includedFolderPaths: Set<String> = emptySet(),
+    val materialDesignEnabled: Boolean = true,
+    val materialYouEnabled: Boolean = true,
+    val pinnedFolders: Set<String> = emptySet(),
+    val pinnedArtists: Set<String> = emptySet(),
+    val pinnedAlbums: Set<String> = emptySet(),
+    val pauseOnZeroVolume: Boolean = false,
+    val libraryViewType: String = "LIST",
+    val playlistViewType: String = "LIST"
 )
 
 @Singleton
@@ -83,6 +91,14 @@ class UserSettingsRepository @Inject constructor(
         val NEXT_FUN_FACT_HOUR = intPreferencesKey("next_fun_fact_hour")
         val VIBRATION_ENABLED = booleanPreferencesKey("vibration_enabled")
         val INCLUDED_FOLDER_PATHS = stringSetPreferencesKey("included_folder_paths")
+        val MATERIAL_DESIGN_ENABLED = booleanPreferencesKey("material_design_enabled")
+        val MATERIAL_YOU_ENABLED = booleanPreferencesKey("material_you_enabled")
+        val PINNED_FOLDERS = stringSetPreferencesKey("pinned_folders")
+        val PINNED_ARTISTS = stringSetPreferencesKey("pinned_artists")
+        val PINNED_ALBUMS = stringSetPreferencesKey("pinned_albums")
+        val PAUSE_ON_ZERO_VOLUME = booleanPreferencesKey("pause_on_zero_volume")
+        val LIBRARY_VIEW_TYPE = stringPreferencesKey("library_view_type")
+        val PLAYLIST_VIEW_TYPE = stringPreferencesKey("playlist_view_type")
     }
 
     val userSettingsFlow: Flow<UserSettings> = context.dataStore.data.map { prefs ->
@@ -117,8 +133,79 @@ class UserSettingsRepository @Inject constructor(
             hasScanned = prefs[Keys.HAS_SCANNED] ?: false,
             nextFunFactHour = prefs[Keys.NEXT_FUN_FACT_HOUR] ?: 1,
             vibrationEnabled = prefs[Keys.VIBRATION_ENABLED] ?: true,
-            includedFolderPaths = prefs[Keys.INCLUDED_FOLDER_PATHS] ?: emptySet()
+            includedFolderPaths = prefs[Keys.INCLUDED_FOLDER_PATHS] ?: emptySet(),
+            materialDesignEnabled = prefs[Keys.MATERIAL_DESIGN_ENABLED] ?: true,
+            materialYouEnabled = prefs[Keys.MATERIAL_YOU_ENABLED] ?: true,
+            pinnedFolders = prefs[Keys.PINNED_FOLDERS] ?: emptySet(),
+            pinnedArtists = prefs[Keys.PINNED_ARTISTS] ?: emptySet(),
+            pinnedAlbums = prefs[Keys.PINNED_ALBUMS] ?: emptySet(),
+            pauseOnZeroVolume = prefs[Keys.PAUSE_ON_ZERO_VOLUME] ?: false,
+            libraryViewType = prefs[Keys.LIBRARY_VIEW_TYPE] ?: "LIST",
+            playlistViewType = prefs[Keys.PLAYLIST_VIEW_TYPE] ?: "LIST"
         )
+    }
+
+    suspend fun setLibraryViewType(type: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.LIBRARY_VIEW_TYPE] = type
+        }
+    }
+
+    suspend fun setPlaylistViewType(type: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.PLAYLIST_VIEW_TYPE] = type
+        }
+    }
+
+    suspend fun setPauseOnZeroVolume(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.PAUSE_ON_ZERO_VOLUME] = enabled
+        }
+    }
+
+    suspend fun togglePinFolder(folderPath: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[Keys.PINNED_FOLDERS] ?: emptySet()
+            if (current.contains(folderPath)) {
+                prefs[Keys.PINNED_FOLDERS] = current - folderPath
+            } else if (current.size < 3) {
+                prefs[Keys.PINNED_FOLDERS] = current + folderPath
+            }
+        }
+    }
+
+    suspend fun togglePinArtist(artistName: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[Keys.PINNED_ARTISTS] ?: emptySet()
+            if (current.contains(artistName)) {
+                prefs[Keys.PINNED_ARTISTS] = current - artistName
+            } else if (current.size < 3) {
+                prefs[Keys.PINNED_ARTISTS] = current + artistName
+            }
+        }
+    }
+
+    suspend fun togglePinAlbum(albumName: String) {
+        context.dataStore.edit { prefs ->
+            val current = prefs[Keys.PINNED_ALBUMS] ?: emptySet()
+            if (current.contains(albumName)) {
+                prefs[Keys.PINNED_ALBUMS] = current - albumName
+            } else if (current.size < 3) {
+                prefs[Keys.PINNED_ALBUMS] = current + albumName
+            }
+        }
+    }
+
+    suspend fun setMaterialDesignEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.MATERIAL_DESIGN_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setMaterialYouEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.MATERIAL_YOU_ENABLED] = enabled
+        }
     }
 
     suspend fun addIncludedFolder(path: String) {

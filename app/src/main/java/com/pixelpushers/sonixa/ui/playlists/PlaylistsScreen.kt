@@ -1,5 +1,6 @@
 package com.pixelpushers.sonixa.ui.playlists
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -39,9 +40,11 @@ import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -95,11 +98,14 @@ fun PlaylistsScreen(
     onSongClick: (SongEntity, List<SongEntity>) -> Unit = { _, _ -> },
     onPlayAll: (List<SongEntity>) -> Unit = {},
     onShuffleAll: (List<SongEntity>) -> Unit = {},
+    viewType: LibraryViewType = LibraryViewType.LIST,
+    onViewTypeChange: (LibraryViewType) -> Unit = {},
+    materialDesignEnabled: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     var showNewPlaylistDialog by remember { mutableStateOf(false) }
     var playlistNameInput by remember { mutableStateOf("") }
-    var viewType by remember { mutableStateOf(LibraryViewType.LIST) }
+    val viewType = viewType
 
     var selectedPlaylistEntity by remember { mutableStateOf<PlaylistEntity?>(null) }
     var selectedAutoPlaylistTitle by remember { mutableStateOf<String?>(null) }
@@ -108,6 +114,13 @@ fun PlaylistsScreen(
     val customPlaylistSongs = selectedPlaylistEntity?.let { playlist ->
         remember(playlist.id) { getSongsForPlaylist(playlist.id) }.collectAsState(initial = emptyList()).value
     } ?: emptyList()
+
+    selectedAutoPlaylistTitle?.let { _ ->
+        BackHandler { selectedAutoPlaylistTitle = null }
+    }
+    selectedPlaylistEntity?.let { _ ->
+        BackHandler { selectedPlaylistEntity = null }
+    }
 
     Box(
         modifier = modifier
@@ -157,7 +170,7 @@ fun PlaylistsScreen(
                             .size(32.dp)
                             .clip(CircleShape)
                             .background(if (viewType == LibraryViewType.LIST) MaterialTheme.colorScheme.primary else Color.Transparent)
-                            .clickable { viewType = LibraryViewType.LIST },
+                            .clickable { onViewTypeChange(LibraryViewType.LIST) },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -173,7 +186,7 @@ fun PlaylistsScreen(
                             .size(32.dp)
                             .clip(CircleShape)
                             .background(if (viewType == LibraryViewType.GRID) MaterialTheme.colorScheme.primary else Color.Transparent)
-                            .clickable { viewType = LibraryViewType.GRID },
+                            .clickable { onViewTypeChange(LibraryViewType.GRID) },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -210,6 +223,7 @@ fun PlaylistsScreen(
                             songCount = favorites.size,
                             icon = Icons.Default.Favorite,
                             iconTint = MaterialTheme.colorScheme.primary,
+                            materialDesignEnabled = materialDesignEnabled,
                             onClick = {
                                 selectedAutoPlaylistTitle = "Favorites"
                                 selectedAutoPlaylistSongs = favorites
@@ -223,6 +237,7 @@ fun PlaylistsScreen(
                             songCount = recentlyPlayed.size,
                             icon = Icons.Default.History,
                             iconTint = MaterialTheme.colorScheme.primary,
+                            materialDesignEnabled = materialDesignEnabled,
                             onClick = {
                                 selectedAutoPlaylistTitle = "Recently Played"
                                 selectedAutoPlaylistSongs = recentlyPlayed
@@ -236,6 +251,7 @@ fun PlaylistsScreen(
                             songCount = mostPlayed.size,
                             icon = Icons.AutoMirrored.Filled.TrendingUp,
                             iconTint = MaterialTheme.colorScheme.primary,
+                            materialDesignEnabled = materialDesignEnabled,
                             onClick = {
                                 selectedAutoPlaylistTitle = "Most Played"
                                 selectedAutoPlaylistSongs = mostPlayed
@@ -269,6 +285,7 @@ fun PlaylistsScreen(
                             CustomPlaylistRow(
                                 playlist = playlist,
                                 getSongCount = getSongCountForPlaylist,
+                                materialDesignEnabled = materialDesignEnabled,
                                 onClick = { selectedPlaylistEntity = playlist }
                             )
                         }
@@ -277,7 +294,7 @@ fun PlaylistsScreen(
             } else {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
-                    contentPadding = PaddingValues(bottom = 140.dp),
+                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 160.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxSize()
@@ -298,6 +315,7 @@ fun PlaylistsScreen(
                             songCount = favorites.size,
                             icon = Icons.Default.Favorite,
                             iconTint = MaterialTheme.colorScheme.primary,
+                            materialDesignEnabled = materialDesignEnabled,
                             onClick = {
                                 selectedAutoPlaylistTitle = "Favorites"
                                 selectedAutoPlaylistSongs = favorites
@@ -311,6 +329,7 @@ fun PlaylistsScreen(
                             songCount = recentlyPlayed.size,
                             icon = Icons.Default.History,
                             iconTint = MaterialTheme.colorScheme.primary,
+                            materialDesignEnabled = materialDesignEnabled,
                             onClick = {
                                 selectedAutoPlaylistTitle = "Recently Played"
                                 selectedAutoPlaylistSongs = recentlyPlayed
@@ -324,6 +343,7 @@ fun PlaylistsScreen(
                             songCount = mostPlayed.size,
                             icon = Icons.AutoMirrored.Filled.TrendingUp,
                             iconTint = MaterialTheme.colorScheme.primary,
+                            materialDesignEnabled = materialDesignEnabled,
                             onClick = {
                                 selectedAutoPlaylistTitle = "Most Played"
                                 selectedAutoPlaylistSongs = mostPlayed
@@ -356,6 +376,7 @@ fun PlaylistsScreen(
                             CustomPlaylistCard(
                                 playlist = playlist,
                                 getSongCount = getSongCountForPlaylist,
+                                materialDesignEnabled = materialDesignEnabled,
                                 onClick = { selectedPlaylistEntity = playlist }
                             )
                         }
@@ -483,6 +504,7 @@ fun PlaylistsScreen(
 fun CustomPlaylistRow(
     playlist: PlaylistEntity,
     getSongCount: (Long) -> Flow<Int>,
+    materialDesignEnabled: Boolean = true,
     onClick: () -> Unit
 ) {
     val count by getSongCount(playlist.id).collectAsState(initial = 0)
@@ -491,6 +513,7 @@ fun CustomPlaylistRow(
         songCount = count,
         icon = Icons.AutoMirrored.Filled.QueueMusic,
         iconTint = MaterialTheme.colorScheme.primary,
+        materialDesignEnabled = materialDesignEnabled,
         onClick = onClick
     )
 }
@@ -499,6 +522,7 @@ fun CustomPlaylistRow(
 fun CustomPlaylistCard(
     playlist: PlaylistEntity,
     getSongCount: (Long) -> Flow<Int>,
+    materialDesignEnabled: Boolean = true,
     onClick: () -> Unit
 ) {
     val count by getSongCount(playlist.id).collectAsState(initial = 0)
@@ -507,6 +531,7 @@ fun CustomPlaylistCard(
         songCount = count,
         icon = Icons.AutoMirrored.Filled.QueueMusic,
         iconTint = MaterialTheme.colorScheme.primary,
+        materialDesignEnabled = materialDesignEnabled,
         onClick = onClick
     )
 }
@@ -863,18 +888,8 @@ fun AddSongsToPlaylistSheet(
                     items(allSongs, key = { it.id }) { song ->
                         var isAdded by remember(playlistSongIds) { mutableStateOf(playlistSongIds.contains(song.id)) }
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    isAdded = !isAdded
-                                    onToggleSong(song.id, isAdded)
-                                }
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
+                        androidx.compose.material3.ListItem(
+                            headlineContent = {
                                 Text(
                                     text = song.title,
                                     fontSize = 16.sp,
@@ -883,6 +898,8 @@ fun AddSongsToPlaylistSheet(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
+                            },
+                            supportingContent = {
                                 Text(
                                     text = song.artist,
                                     fontSize = 13.sp,
@@ -890,16 +907,23 @@ fun AddSongsToPlaylistSheet(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                            }
-
-                            Checkbox(
-                                checked = isAdded,
-                                onCheckedChange = {
-                                    isAdded = it
-                                    onToggleSong(song.id, it)
+                            },
+                            trailingContent = {
+                                Checkbox(
+                                    checked = isAdded,
+                                    onCheckedChange = {
+                                        isAdded = it
+                                        onToggleSong(song.id, it)
+                                    }
+                                )
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    isAdded = !isAdded
+                                    onToggleSong(song.id, isAdded)
                                 }
-                            )
-                        }
+                        )
                     }
                 }
             }
@@ -933,46 +957,54 @@ fun AutoPlaylistRow(
     songCount: Int,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     iconTint: Color,
+    materialDesignEnabled: Boolean = true,
     onClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
+    val shape = if (materialDesignEnabled) RoundedCornerShape(28.dp) else RoundedCornerShape(16.dp)
+    ElevatedCard(
+        onClick = onClick,
+        shape = shape,
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+        ),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Box(
+        Row(
             modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surface),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = iconTint,
-                modifier = Modifier.size(22.dp)
-            )
-        }
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = iconTint,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
 
-        Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
-        Column {
-            Text(
-                text = title,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                text = "$songCount songs",
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Column {
+                Text(
+                    text = title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                Text(
+                    text = "$songCount songs",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -983,18 +1015,22 @@ fun AutoPlaylistCard(
     songCount: Int,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     iconTint: Color,
+    materialDesignEnabled: Boolean = true,
     onClick: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            .clickable { onClick() }
-            .padding(16.dp)
+    val shape = if (materialDesignEnabled) RoundedCornerShape(28.dp) else RoundedCornerShape(16.dp)
+    ElevatedCard(
+        onClick = onClick,
+        shape = shape,
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+        ),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
             horizontalAlignment = Alignment.Start
         ) {
             Box(

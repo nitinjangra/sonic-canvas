@@ -8,6 +8,7 @@ import com.pixelpushers.sonixa.data.preferences.SongClickBehavior
 import com.pixelpushers.sonixa.data.preferences.UserSettings
 import com.pixelpushers.sonixa.data.preferences.UserSettingsRepository
 import com.pixelpushers.sonixa.data.scanner.MediaStoreScanner
+import com.pixelpushers.sonixa.util.BackupManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +20,8 @@ import kotlin.random.Random
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsRepository: UserSettingsRepository,
-    private val scanner: MediaStoreScanner
+    private val scanner: MediaStoreScanner,
+    private val backupManager: BackupManager
 ) : ViewModel() {
 
     val settings: StateFlow<UserSettings> = settingsRepository.userSettingsFlow
@@ -35,6 +37,46 @@ class SettingsViewModel @Inject constructor(
 
     fun setVibrationEnabled(enabled: Boolean) {
         viewModelScope.launch { settingsRepository.setVibrationEnabled(enabled) }
+    }
+
+    fun setPauseOnZeroVolume(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setPauseOnZeroVolume(enabled) }
+    }
+
+    fun setMaterialDesignEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setMaterialDesignEnabled(enabled) }
+    }
+
+    fun setMaterialYouEnabled(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setMaterialYouEnabled(enabled) }
+    }
+
+    fun togglePinFolder(folderPath: String) {
+        viewModelScope.launch { settingsRepository.togglePinFolder(folderPath) }
+    }
+
+    fun togglePinArtist(artistName: String) {
+        viewModelScope.launch { settingsRepository.togglePinArtist(artistName) }
+    }
+
+    fun togglePinAlbum(albumName: String) {
+        viewModelScope.launch { settingsRepository.togglePinAlbum(albumName) }
+    }
+
+    fun setLibraryViewType(type: com.pixelpushers.sonixa.ui.library.LibraryViewType) {
+        viewModelScope.launch { settingsRepository.setLibraryViewType(type.name) }
+    }
+
+    fun setPlaylistViewType(type: com.pixelpushers.sonixa.ui.library.LibraryViewType) {
+        viewModelScope.launch { settingsRepository.setPlaylistViewType(type.name) }
+    }
+
+    fun exportBackup(uri: android.net.Uri) {
+        viewModelScope.launch { backupManager.exportBackup(uri) }
+    }
+
+    fun restoreBackup(uri: android.net.Uri) {
+        viewModelScope.launch { backupManager.restoreBackup(uri) }
     }
 
     fun setMatchAlbumColors(enabled: Boolean) {
@@ -60,22 +102,14 @@ class SettingsViewModel @Inject constructor(
     fun setFilterShortTracks(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setFilterShortTracks(enabled)
-            scanner.scanMusic(
-                minDurationMs = if (enabled) 30000L else 0L,
-                excludeHiddenFolders = settings.value.excludeHiddenFolders,
-                skippedFolderPaths = settings.value.skippedFolderPaths
-            )
+            rescanLibrary()
         }
     }
 
     fun setExcludeHiddenFolders(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setExcludeHiddenFolders(enabled)
-            scanner.scanMusic(
-                minDurationMs = if (settings.value.filterShortTracks) 30000L else 0L,
-                excludeHiddenFolders = enabled,
-                skippedFolderPaths = settings.value.skippedFolderPaths
-            )
+            rescanLibrary()
         }
     }
 
@@ -117,59 +151,42 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun addSkippedFolder(path: String) {
-        viewModelScope.launch {
-            settingsRepository.addSkippedFolder(path)
-            scanner.scanMusic(
-                minDurationMs = if (settings.value.filterShortTracks) 30000L else 0L,
-                excludeHiddenFolders = settings.value.excludeHiddenFolders,
-                skippedFolderPaths = settings.value.skippedFolderPaths + path
-            )
-        }
-    }
-
-    fun removeSkippedFolder(path: String) {
-        viewModelScope.launch {
-            settingsRepository.removeSkippedFolder(path)
-            scanner.scanMusic(
-                minDurationMs = if (settings.value.filterShortTracks) 30000L else 0L,
-                excludeHiddenFolders = settings.value.excludeHiddenFolders,
-                skippedFolderPaths = settings.value.skippedFolderPaths - path
-            )
-        }
-    }
-
-    fun rescanLibrary() {
-        viewModelScope.launch {
-            scanner.scanMusic(
-                minDurationMs = if (settings.value.filterShortTracks) 30000L else 0L,
-                excludeHiddenFolders = settings.value.excludeHiddenFolders,
-                skippedFolderPaths = settings.value.skippedFolderPaths,
-                includedFolderPaths = settings.value.includedFolderPaths
-            )
-        }
-    }
-
     fun addIncludedFolder(path: String) {
         viewModelScope.launch {
             settingsRepository.addIncludedFolder(path)
-            scanner.scanMusic(
-                minDurationMs = if (settings.value.filterShortTracks) 30000L else 0L,
-                excludeHiddenFolders = settings.value.excludeHiddenFolders,
-                skippedFolderPaths = settings.value.skippedFolderPaths,
-                includedFolderPaths = settings.value.includedFolderPaths + path
-            )
+            rescanLibrary()
         }
     }
 
     fun removeIncludedFolder(path: String) {
         viewModelScope.launch {
             settingsRepository.removeIncludedFolder(path)
+            rescanLibrary()
+        }
+    }
+
+    fun addSkippedFolder(path: String) {
+        viewModelScope.launch {
+            settingsRepository.addSkippedFolder(path)
+            rescanLibrary()
+        }
+    }
+
+    fun removeSkippedFolder(path: String) {
+        viewModelScope.launch {
+            settingsRepository.removeSkippedFolder(path)
+            rescanLibrary()
+        }
+    }
+
+    fun rescanLibrary() {
+        viewModelScope.launch {
+            val s = settings.value
             scanner.scanMusic(
-                minDurationMs = if (settings.value.filterShortTracks) 30000L else 0L,
-                excludeHiddenFolders = settings.value.excludeHiddenFolders,
-                skippedFolderPaths = settings.value.skippedFolderPaths,
-                includedFolderPaths = settings.value.includedFolderPaths - path
+                minDurationMs = if (s.filterShortTracks) 30000L else 0L,
+                excludeHiddenFolders = s.excludeHiddenFolders,
+                skippedFolderPaths = s.skippedFolderPaths,
+                includedFolderPaths = s.includedFolderPaths
             )
         }
     }
