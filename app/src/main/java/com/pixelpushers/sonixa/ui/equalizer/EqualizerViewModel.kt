@@ -17,9 +17,31 @@ class EqualizerViewModel @Inject constructor(
     private val _state = MutableStateFlow(EqualizerState())
     val state: StateFlow<EqualizerState> = _state.asStateFlow()
 
+    init {
+        // Load initial presets and bands
+        val levels = audioFxController.getCurrentBandLevels()
+        val freqs = audioFxController.getBandFrequencies()
+        val presets = audioFxController.getPresetNames()
+        _state.value = _state.value.copy(
+            bandLevels = levels,
+            bandFrequenciesHz = freqs,
+            presets = presets,
+            numberOfBands = levels.size
+        )
+    }
+
     fun toggleEnabled(enabled: Boolean) {
-        _state.value = _state.value.copy(isEnabled = enabled)
         audioFxController.setEnabled(enabled)
+        val levels = audioFxController.getCurrentBandLevels()
+        val freqs = audioFxController.getBandFrequencies()
+        val presets = audioFxController.getPresetNames()
+        _state.value = _state.value.copy(
+            isEnabled = enabled,
+            bandLevels = levels,
+            bandFrequenciesHz = freqs,
+            presets = presets,
+            numberOfBands = levels.size
+        )
     }
 
     fun setBandLevel(bandIndex: Int, levelDb: Int) {
@@ -32,8 +54,17 @@ class EqualizerViewModel @Inject constructor(
     }
 
     fun selectPreset(presetIndex: Int) {
-        _state.value = _state.value.copy(currentPreset = presetIndex)
         audioFxController.setPreset(presetIndex)
+        val levels = audioFxController.getCurrentBandLevels()
+        val freqs = audioFxController.getBandFrequencies()
+        val presets = audioFxController.getPresetNames()
+        _state.value = _state.value.copy(
+            currentPreset = presetIndex,
+            bandLevels = levels,
+            bandFrequenciesHz = freqs,
+            presets = presets,
+            numberOfBands = levels.size
+        )
     }
 
     fun setBassBoost(percent: Int) {

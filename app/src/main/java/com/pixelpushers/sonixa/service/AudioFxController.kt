@@ -63,6 +63,50 @@ class AudioFxController @Inject constructor() {
         } catch (_: Exception) {}
     }
 
+    fun getPresetNames(): List<String> {
+        return try {
+            val eq = equalizer ?: return listOf("Flat", "Rock", "Pop", "Jazz", "Bass")
+            val count = eq.numberOfPresets.toInt()
+            val list = mutableListOf<String>()
+            for (i in 0 until count) {
+                list.add(eq.getPresetName(i.toShort()))
+            }
+            if (list.isEmpty()) listOf("Flat", "Rock", "Pop", "Jazz", "Bass") else list
+        } catch (_: Exception) {
+            listOf("Flat", "Rock", "Pop", "Jazz", "Bass")
+        }
+    }
+
+    fun getCurrentBandLevels(): List<Int> {
+        return try {
+            val eq = equalizer ?: return listOf(0, 0, 0, 0, 0)
+            val numBands = eq.numberOfBands.toInt().coerceAtMost(10)
+            val levels = mutableListOf<Int>()
+            for (i in 0 until numBands) {
+                val mb = eq.getBandLevel(i.toShort())
+                levels.add((mb / 100).toInt())
+            }
+            if (levels.isEmpty()) listOf(0, 0, 0, 0, 0) else levels
+        } catch (_: Exception) {
+            listOf(0, 0, 0, 0, 0)
+        }
+    }
+
+    fun getBandFrequencies(): List<Int> {
+        return try {
+            val eq = equalizer ?: return listOf(60, 230, 910, 3600, 14000)
+            val numBands = eq.numberOfBands.toInt().coerceAtMost(10)
+            val freqs = mutableListOf<Int>()
+            for (i in 0 until numBands) {
+                val mHz = eq.getCenterFreq(i.toShort())
+                freqs.add((mHz / 1000).toInt())
+            }
+            if (freqs.isEmpty()) listOf(60, 230, 910, 3600, 14000) else freqs
+        } catch (_: Exception) {
+            listOf(60, 230, 910, 3600, 14000)
+        }
+    }
+
     fun setBassBoost(strengthPercent: Int) {
         try {
             bassBoost?.let {
