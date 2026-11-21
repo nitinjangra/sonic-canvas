@@ -76,6 +76,12 @@ class BackupManager @Inject constructor(
             context.contentResolver.openOutputStream(destinationUri)?.use { os ->
                 os.write(json.toString(2).toByteArray(Charsets.UTF_8))
             }
+
+            notificationRepository.addNotification(
+                title = "Backup Exported Successfully",
+                message = "Your settings preferences, playlists, and pinned items were saved to JSON backup.",
+                category = NotificationCategory.SYSTEM
+            )
             true
         } catch (e: Exception) {
             false

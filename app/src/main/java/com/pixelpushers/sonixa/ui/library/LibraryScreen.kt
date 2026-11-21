@@ -130,6 +130,8 @@ fun LibraryScreen(
     onTogglePinAlbum: (String) -> Unit = {},
     onTogglePinArtist: (String) -> Unit = {},
     onTogglePinFolder: (String) -> Unit = {},
+    viewType: LibraryViewType = LibraryViewType.LIST,
+    onViewTypeChange: (LibraryViewType) -> Unit = {}
 ) {
     var selectedSection by remember { mutableStateOf(LibrarySection.SONGS) }
     var selectedAlbumName by remember { mutableStateOf<String?>(null) }
@@ -147,7 +149,7 @@ fun LibraryScreen(
         BackHandler { selectedFolderPath = null }
     }
 
-    var libraryViewType by remember { mutableStateOf(LibraryViewType.LIST) }
+    val libraryViewType = viewType
     var isBulkSelectActive by remember { mutableStateOf(false) }
     var selectedSongIds by remember { mutableStateOf(setOf<Long>()) }
 
@@ -238,7 +240,7 @@ fun LibraryScreen(
                             .size(32.dp)
                             .clip(CircleShape)
                             .background(if (libraryViewType == LibraryViewType.LIST) MaterialTheme.colorScheme.primary else Color.Transparent)
-                            .clickable { libraryViewType = LibraryViewType.LIST },
+                            .clickable { onViewTypeChange(LibraryViewType.LIST) },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -254,7 +256,7 @@ fun LibraryScreen(
                             .size(32.dp)
                             .clip(CircleShape)
                             .background(if (libraryViewType == LibraryViewType.GRID) MaterialTheme.colorScheme.primary else Color.Transparent)
-                            .clickable { libraryViewType = LibraryViewType.GRID },
+                            .clickable { onViewTypeChange(LibraryViewType.GRID) },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(

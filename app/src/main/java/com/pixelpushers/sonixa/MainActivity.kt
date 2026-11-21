@@ -12,8 +12,17 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -42,6 +51,7 @@ import com.pixelpushers.sonixa.ui.components.MiniPlayerPill
 import com.pixelpushers.sonixa.ui.equalizer.EqualizerScreen
 import com.pixelpushers.sonixa.ui.equalizer.EqualizerViewModel
 import com.pixelpushers.sonixa.ui.library.LibraryScreen
+import com.pixelpushers.sonixa.ui.library.LibraryViewType
 import com.pixelpushers.sonixa.ui.library.LibraryViewModel
 import com.pixelpushers.sonixa.ui.lyrics.LyricsScreen
 import com.pixelpushers.sonixa.ui.lyrics.LyricsViewModel
@@ -217,6 +227,22 @@ fun MainAppContent(
     var showSleepTimerSheet by remember { mutableStateOf(false) }
     var showAddToPlaylistSheet by remember { mutableStateOf(false) }
 
+    var isPillVisibleByScroll by remember { mutableStateOf(true) }
+
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                val delta = available.y
+                if (delta < -12f) {
+                    isPillVisibleByScroll = false
+                } else if (delta > 12f) {
+                    isPillVisibleByScroll = true
+                }
+                return Offset.Zero
+            }
+        }
+    }
+
     LaunchedEffect(playerState.currentSong?.id) {
         playerState.currentSong?.id?.let { songId ->
             lyricsViewModel.loadLyricsForSong(songId)
@@ -257,6 +283,7 @@ fun MainAppContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
+                    .nestedScroll(nestedScrollConnection)
             ) {
                 // Tab Content
                 when (selectedTab) {
@@ -286,7 +313,13 @@ fun MainAppContent(
                         },
                         onCreatePlaylist = { name -> playlistsViewModel.createPlaylist(name) },
                         onRescanMusic = { settingsViewModel.rescanLibrary() },
-                        onChooseFolders = { selectedTab = MainTab.SETTINGS }
+                        onChooseFolders = { selectedTab = MainTab.SETTINGS },
+                        viewType = try {
+                            LibraryViewType.valueOf(settings.libraryViewType)
+                        } catch (_: Exception) {
+                            LibraryViewType.LIST
+                        },
+                        onViewTypeChange = { settingsViewModel.setLibraryViewType(it) }
                     )
 
                     MainTab.SEARCH -> SearchScreen(
@@ -325,7 +358,13 @@ fun MainAppContent(
                         },
                         onSongClick = { song, list -> playSongWithBehavior(song, list) },
                         onPlayAll = { list -> playSongWithBehavior(list.first(), list) },
-                        onShuffleAll = { list -> playSongWithBehavior(list.shuffled().first(), list.shuffled()) }
+                        onShuffleAll = { list -> playSongWithBehavior(list.shuffled().first(), list.shuffled()) },
+                        viewType = try {
+                            LibraryViewType.valueOf(settings.playlistViewType)
+                        } catch (_: Exception) {
+                            LibraryViewType.LIST
+                        },
+                        onViewTypeChange = { settingsViewModel.setPlaylistViewType(it) }
                     )
 
                     MainTab.SETTINGS -> SettingsScreen(
@@ -340,6 +379,7 @@ fun MainAppContent(
                         onSetDefaultThumbnailIndex = { settingsViewModel.setDefaultThumbnailIndex(it) },
                         onSetResumePlaybackOnStart = { settingsViewModel.setResumePlaybackOnStart(it) },
                         onSetPauseOnAudioDisconnect = { settingsViewModel.setPauseOnAudioDisconnect(it) },
+                        onSetPauseOnZeroVolume = { settingsViewModel.setPauseOnZeroVolume(it) },
                         onGenerateRandomTheme = { settingsViewModel.generateRandomVectorTheme() },
                         onAddSkippedFolder = { settingsViewModel.addSkippedFolder(it) },
                         onRemoveSkippedFolder = { settingsViewModel.removeSkippedFolder(it) },
@@ -356,12 +396,22 @@ fun MainAppContent(
                 }
 
                 // Floating Glass Pills (Mini Player + Navigation Bar)
-                val isPillVisible = activeOverlay == ScreenOverlay.NONE
+                val isPillVisible = activeOverlay == ScreenOverlay.NONE && isPillVisibleByScroll
 
                 AnimatedVisibility(
                     visible = isPillVisible,
-                    enter = slideInVertically { it },
-                    exit = slideOutVertically { it },
+                    enter = slideInVertically(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessLow
+                        )
+                    ) { it } + fadeIn(animationSpec = tween(250)),
+                    exit = slideOutVertically(
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMedium
+                        )
+                    ) { it } + fadeOut(animationSpec = tween(250)),
                     modifier = Modifier.align(Alignment.BottomCenter)
                 ) {
                     Column(

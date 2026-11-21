@@ -39,6 +39,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.setVibrationEnabled(enabled) }
     }
 
+    fun setPauseOnZeroVolume(enabled: Boolean) {
+        viewModelScope.launch { settingsRepository.setPauseOnZeroVolume(enabled) }
+    }
+
     fun setMaterialDesignEnabled(enabled: Boolean) {
         viewModelScope.launch { settingsRepository.setMaterialDesignEnabled(enabled) }
     }
@@ -57,6 +61,14 @@ class SettingsViewModel @Inject constructor(
 
     fun togglePinAlbum(albumName: String) {
         viewModelScope.launch { settingsRepository.togglePinAlbum(albumName) }
+    }
+
+    fun setLibraryViewType(type: com.pixelpushers.sonixa.ui.library.LibraryViewType) {
+        viewModelScope.launch { settingsRepository.setLibraryViewType(type.name) }
+    }
+
+    fun setPlaylistViewType(type: com.pixelpushers.sonixa.ui.library.LibraryViewType) {
+        viewModelScope.launch { settingsRepository.setPlaylistViewType(type.name) }
     }
 
     fun exportBackup(uri: android.net.Uri) {

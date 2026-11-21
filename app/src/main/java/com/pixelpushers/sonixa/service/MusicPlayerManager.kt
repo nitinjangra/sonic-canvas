@@ -11,6 +11,7 @@ import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.MoreExecutors
 import com.pixelpushers.sonixa.data.local.entity.SongEntity
+import com.pixelpushers.sonixa.data.preferences.UserSettingsRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +20,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -26,7 +28,8 @@ import javax.inject.Singleton
 @Singleton
 class MusicPlayerManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    val visualizerController: VisualizerController
+    val visualizerController: VisualizerController,
+    private val settingsRepository: UserSettingsRepository
 ) {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var controllerFuture: ListenableFuture<MediaController>? = null
@@ -40,6 +43,34 @@ class MusicPlayerManager @Inject constructor(
     val currentMediaIndex: StateFlow<Int> = _currentMediaIndex.asStateFlow()
 
     init {
+        // Volume observer to pause when media volume reaches 0 (driven by settings toggle)
+        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? android.media.AudioManager
+        val volumeObserver = object : android.database.ContentObserver(android.os.Handler(android.os.Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                super.onChange(selfChange)
+                try {
+                    val currentVolume = audioManager?.getStreamVolume(android.media.AudioManager.STREAM_MUSIC) ?: 1
+                    if (currentVolume == 0) {
+                        val controller = mediaController
+                        if (controller != null && controller.isPlaying) {
+                            scope.launch {
+                                val settings = settingsRepository.userSettingsFlow.first()
+                                if (settings.pauseOnZeroVolume) {
+                                    controller.pause()
+                                }
+                            }
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+        try {
+            context.contentResolver.registerContentObserver(
+                android.provider.Settings.System.CONTENT_URI,
+                true,
+                volumeObserver
+            )
+        } catch (_: Exception) {}
         val sessionToken = SessionToken(context, ComponentName(context, PlaybackService::class.java))
         controllerFuture = MediaController.Builder(context, sessionToken).buildAsync()
         controllerFuture?.addListener({

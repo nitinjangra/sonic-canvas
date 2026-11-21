@@ -57,7 +57,10 @@ data class UserSettings(
     val materialYouEnabled: Boolean = true,
     val pinnedFolders: Set<String> = emptySet(),
     val pinnedArtists: Set<String> = emptySet(),
-    val pinnedAlbums: Set<String> = emptySet()
+    val pinnedAlbums: Set<String> = emptySet(),
+    val pauseOnZeroVolume: Boolean = false,
+    val libraryViewType: String = "LIST",
+    val playlistViewType: String = "LIST"
 )
 
 @Singleton
@@ -93,6 +96,9 @@ class UserSettingsRepository @Inject constructor(
         val PINNED_FOLDERS = stringSetPreferencesKey("pinned_folders")
         val PINNED_ARTISTS = stringSetPreferencesKey("pinned_artists")
         val PINNED_ALBUMS = stringSetPreferencesKey("pinned_albums")
+        val PAUSE_ON_ZERO_VOLUME = booleanPreferencesKey("pause_on_zero_volume")
+        val LIBRARY_VIEW_TYPE = stringPreferencesKey("library_view_type")
+        val PLAYLIST_VIEW_TYPE = stringPreferencesKey("playlist_view_type")
     }
 
     val userSettingsFlow: Flow<UserSettings> = context.dataStore.data.map { prefs ->
@@ -132,8 +138,29 @@ class UserSettingsRepository @Inject constructor(
             materialYouEnabled = prefs[Keys.MATERIAL_YOU_ENABLED] ?: true,
             pinnedFolders = prefs[Keys.PINNED_FOLDERS] ?: emptySet(),
             pinnedArtists = prefs[Keys.PINNED_ARTISTS] ?: emptySet(),
-            pinnedAlbums = prefs[Keys.PINNED_ALBUMS] ?: emptySet()
+            pinnedAlbums = prefs[Keys.PINNED_ALBUMS] ?: emptySet(),
+            pauseOnZeroVolume = prefs[Keys.PAUSE_ON_ZERO_VOLUME] ?: false,
+            libraryViewType = prefs[Keys.LIBRARY_VIEW_TYPE] ?: "LIST",
+            playlistViewType = prefs[Keys.PLAYLIST_VIEW_TYPE] ?: "LIST"
         )
+    }
+
+    suspend fun setLibraryViewType(type: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.LIBRARY_VIEW_TYPE] = type
+        }
+    }
+
+    suspend fun setPlaylistViewType(type: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.PLAYLIST_VIEW_TYPE] = type
+        }
+    }
+
+    suspend fun setPauseOnZeroVolume(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.PAUSE_ON_ZERO_VOLUME] = enabled
+        }
     }
 
     suspend fun togglePinFolder(folderPath: String) {

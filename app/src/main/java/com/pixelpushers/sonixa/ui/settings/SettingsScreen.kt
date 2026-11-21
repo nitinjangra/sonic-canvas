@@ -74,6 +74,7 @@ fun SettingsScreen(
     onRescanMusic: () -> Unit,
     onSetFilterShortTracks: (Boolean) -> Unit,
     onSetVibrationEnabled: (Boolean) -> Unit,
+    onSetPauseOnZeroVolume: (Boolean) -> Unit = {},
     onChooseScanFolder: () -> Unit,
     onSetMaterialDesignEnabled: (Boolean) -> Unit,
     onSetMaterialYouEnabled: (Boolean) -> Unit,
@@ -187,6 +188,13 @@ fun SettingsScreen(
                             subtitle = "Pause playback when headphones or Bluetooth disconnect",
                             checked = settings.pauseOnAudioDisconnect,
                             onCheckedChange = onSetPauseOnAudioDisconnect
+                        )
+                        SettingsRowSwitch(
+                            title = "Pause when media volume is zero",
+                            subtitle = "Automatically pause playback when device volume is muted",
+                            checked = settings.pauseOnZeroVolume,
+                            vibrationEnabled = settings.vibrationEnabled,
+                            onCheckedChange = onSetPauseOnZeroVolume
                         )
                         SettingsRowSwitch(
                             title = "Gapless playback",

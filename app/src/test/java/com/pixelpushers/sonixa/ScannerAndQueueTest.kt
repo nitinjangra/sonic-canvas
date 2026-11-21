@@ -1,6 +1,7 @@
 package com.pixelpushers.sonixa
 
 import com.pixelpushers.sonixa.data.scanner.ScanProgress
+import com.pixelpushers.sonixa.data.scanner.normalizePath
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -30,6 +31,23 @@ class ScannerAndQueueTest {
         assertTrue("Valid track >= 30s should be included", validTrackDurationMs >= minDurationMs)
     }
 
+    @Test
+    fun testPositiveIncludedFolderMatching() {
+        val selectedFolders = setOf("/tree/primary:Music", "/storage/emulated/0/Downloads")
+        val mediaStoreFolderPath = "/storage/emulated/0/Music/Rock"
+
+        val normalizedFolderPath = normalizePath(mediaStoreFolderPath)
+        val matchesIncluded = selectedFolders.any { inc ->
+            val normalizedInc = normalizePath(inc)
+            val folderLeaf = inc.substringAfterLast(":").substringAfterLast("/").trim()
+            normalizedFolderPath.startsWith(normalizedInc, ignoreCase = true) ||
+            normalizedInc.startsWith(normalizedFolderPath, ignoreCase = true) ||
+            (folderLeaf.isNotEmpty() && mediaStoreFolderPath.contains(folderLeaf, ignoreCase = true))
+        }
+
+        assertTrue("File inside selected Music folder should be included in positive flow", matchesIncluded)
+    }
+
     // --- Negative Test Flows ---
 
     @Test
@@ -52,6 +70,23 @@ class ScannerAndQueueTest {
         val skippedFolders = setOf("/storage/emulated/0/Ringtones", "/storage/emulated/0/Notifications")
         val isSkipped = skippedFolders.any { folderPath.startsWith(it, ignoreCase = true) }
         assertTrue("Explicit skipped folders should be excluded in negative flow", isSkipped)
+    }
+
+    @Test
+    fun testNegativeExcludedFolderFiltering() {
+        val selectedFolders = setOf("/tree/primary:Music")
+        val outsideFolderPath = "/storage/emulated/0/Podcasts/Episodes"
+
+        val normalizedFolderPath = normalizePath(outsideFolderPath)
+        val matchesIncluded = selectedFolders.any { inc ->
+            val normalizedInc = normalizePath(inc)
+            val folderLeaf = inc.substringAfterLast(":").substringAfterLast("/").trim()
+            normalizedFolderPath.startsWith(normalizedInc, ignoreCase = true) ||
+            normalizedInc.startsWith(normalizedFolderPath, ignoreCase = true) ||
+            (folderLeaf.isNotEmpty() && outsideFolderPath.contains(folderLeaf, ignoreCase = true))
+        }
+
+        assertFalse("File outside selected Music folder should be excluded in negative flow", matchesIncluded)
     }
 
     @Test

@@ -97,11 +97,13 @@ fun PlaylistsScreen(
     onSongClick: (SongEntity, List<SongEntity>) -> Unit = { _, _ -> },
     onPlayAll: (List<SongEntity>) -> Unit = {},
     onShuffleAll: (List<SongEntity>) -> Unit = {},
+    viewType: LibraryViewType = LibraryViewType.LIST,
+    onViewTypeChange: (LibraryViewType) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showNewPlaylistDialog by remember { mutableStateOf(false) }
     var playlistNameInput by remember { mutableStateOf("") }
-    var viewType by remember { mutableStateOf(LibraryViewType.LIST) }
+    val viewType = viewType
 
     var selectedPlaylistEntity by remember { mutableStateOf<PlaylistEntity?>(null) }
     var selectedAutoPlaylistTitle by remember { mutableStateOf<String?>(null) }
@@ -159,7 +161,7 @@ fun PlaylistsScreen(
                             .size(32.dp)
                             .clip(CircleShape)
                             .background(if (viewType == LibraryViewType.LIST) MaterialTheme.colorScheme.primary else Color.Transparent)
-                            .clickable { viewType = LibraryViewType.LIST },
+                            .clickable { onViewTypeChange(LibraryViewType.LIST) },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -175,7 +177,7 @@ fun PlaylistsScreen(
                             .size(32.dp)
                             .clip(CircleShape)
                             .background(if (viewType == LibraryViewType.GRID) MaterialTheme.colorScheme.primary else Color.Transparent)
-                            .clickable { viewType = LibraryViewType.GRID },
+                            .clickable { onViewTypeChange(LibraryViewType.GRID) },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
