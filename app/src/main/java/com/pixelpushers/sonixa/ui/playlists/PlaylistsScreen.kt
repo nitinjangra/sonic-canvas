@@ -1,5 +1,6 @@
 package com.pixelpushers.sonixa.ui.playlists
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -113,6 +114,13 @@ fun PlaylistsScreen(
     val customPlaylistSongs = selectedPlaylistEntity?.let { playlist ->
         remember(playlist.id) { getSongsForPlaylist(playlist.id) }.collectAsState(initial = emptyList()).value
     } ?: emptyList()
+
+    selectedAutoPlaylistTitle?.let { _ ->
+        BackHandler { selectedAutoPlaylistTitle = null }
+    }
+    selectedPlaylistEntity?.let { _ ->
+        BackHandler { selectedPlaylistEntity = null }
+    }
 
     Box(
         modifier = modifier

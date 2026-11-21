@@ -193,8 +193,8 @@ fun EqualizerScreen(
 
                             Box(
                                 modifier = Modifier
-                                    .width(36.dp)
-                                    .height(150.dp),
+                                    .width(44.dp)
+                                    .height(220.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Slider(
@@ -211,8 +211,8 @@ fun EqualizerScreen(
                                         inactiveTrackColor = MaterialTheme.colorScheme.background
                                     ),
                                     modifier = Modifier
-                                        .width(150.dp)
-                                        .height(36.dp)
+                                        .width(220.dp)
+                                        .height(44.dp)
                                         .graphicsLayer(rotationZ = -90f)
                                 )
                             }
