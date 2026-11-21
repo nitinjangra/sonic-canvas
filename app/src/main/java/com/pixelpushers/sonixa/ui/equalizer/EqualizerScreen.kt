@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -160,6 +161,9 @@ fun EqualizerScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+            val sliderTrackHeight = screenHeight * 0.4f
+
             // 5-Band Equalizer Card with Vertical Sliders
             Box(
                 modifier = Modifier
@@ -193,8 +197,8 @@ fun EqualizerScreen(
 
                             Box(
                                 modifier = Modifier
-                                    .width(44.dp)
-                                    .height(220.dp),
+                                    .width(48.dp)
+                                    .height(sliderTrackHeight),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Slider(
@@ -211,8 +215,8 @@ fun EqualizerScreen(
                                         inactiveTrackColor = MaterialTheme.colorScheme.background
                                     ),
                                     modifier = Modifier
-                                        .width(220.dp)
-                                        .height(44.dp)
+                                        .width(sliderTrackHeight)
+                                        .height(48.dp)
                                         .graphicsLayer(rotationZ = -90f)
                                 )
                             }
