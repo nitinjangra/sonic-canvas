@@ -123,7 +123,7 @@ class MusicPlayerManager @Inject constructor(
         }
     }
 
-    fun playQueue(queue: List<SongEntity>, startIndex: Int) {
+    fun playQueue(queue: List<SongEntity>, startIndex: Int, startPositionMs: Long = 0L) {
         scope.launch {
             try {
                 val controller = mediaController
@@ -142,7 +142,7 @@ class MusicPlayerManager @Inject constructor(
                     }
 
                     controller.setMediaItems(mediaItems)
-                    controller.seekTo(startIndex.coerceIn(0, queue.size - 1), 0L)
+                    controller.seekTo(startIndex.coerceIn(0, queue.size - 1), startPositionMs.coerceAtLeast(0L))
                     controller.prepare()
                     controller.play()
                 }

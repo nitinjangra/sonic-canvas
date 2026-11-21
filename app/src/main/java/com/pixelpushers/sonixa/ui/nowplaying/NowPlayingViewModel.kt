@@ -86,8 +86,7 @@ class NowPlayingViewModel @Inject constructor(
                                     queue = allSongs,
                                     currentIndex = index
                                 )
-                                musicPlayerManager.playQueue(allSongs, index)
-                                musicPlayerManager.seekTo(settings.lastPlayedPositionMs)
+                                musicPlayerManager.playQueue(allSongs, index, settings.lastPlayedPositionMs)
                             }
                         }
                     } catch (_: Exception) {}

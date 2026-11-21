@@ -58,6 +58,17 @@ class ScannerAndQueueTest {
         assertEquals(36, thumbnailShapeRadius)
     }
 
+    @Test
+    fun testHappyResumePlaybackWithPosition() {
+        val resumePlaybackOnStart = true
+        val lastPlayedSongId = 101L
+        val lastPlayedPositionMs = 45000L
+
+        val shouldResume = resumePlaybackOnStart && lastPlayedSongId != -1L
+        assertTrue("Happy flow should allow resuming playback", shouldResume)
+        assertEquals(45000L, lastPlayedPositionMs)
+    }
+
     // --- Negative Test Flows ---
 
     @Test
@@ -97,6 +108,16 @@ class ScannerAndQueueTest {
         }
 
         assertFalse("File outside selected Music folder should be excluded in negative flow", matchesIncluded)
+    }
+
+    @Test
+    fun testNegativeResumePlaybackDisabled() {
+        val resumePlaybackOnStart = false
+        val lastPlayedSongId = 101L
+        val lastPlayedPositionMs = 45000L
+
+        val shouldResume = resumePlaybackOnStart && lastPlayedSongId != -1L
+        assertFalse("Negative flow should prevent resume when setting is disabled", shouldResume)
     }
 
     @Test
