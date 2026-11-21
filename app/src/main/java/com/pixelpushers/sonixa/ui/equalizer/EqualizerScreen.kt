@@ -40,6 +40,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -169,14 +170,15 @@ fun EqualizerScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             val screenHeight = LocalConfiguration.current.screenHeightDp.dp
-            val sliderTrackHeight = screenHeight * 0.4f
+            val sliderTrackHeight = screenHeight * 0.36f
 
-            // 5-Band Equalizer Card with True Vertical Sliders (40% Viewport Height)
+            // 5-Band Equalizer Card with True Vertical Sliders (36% Viewport Height, Greyed out when disabled)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .graphicsLayer(alpha = if (state.isEnabled) 1.0f else 0.4f)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (state.isEnabled) 0.5f else 0.2f))
                     .padding(vertical = 16.dp, horizontal = 8.dp)
             ) {
                 Row(
