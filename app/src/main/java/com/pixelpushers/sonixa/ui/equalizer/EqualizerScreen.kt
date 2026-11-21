@@ -1,8 +1,11 @@
 package com.pixelpushers.sonixa.ui.equalizer
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -32,9 +36,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -164,7 +171,7 @@ fun EqualizerScreen(
             val screenHeight = LocalConfiguration.current.screenHeightDp.dp
             val sliderTrackHeight = screenHeight * 0.4f
 
-            // 5-Band Equalizer Card with Vertical Sliders
+            // 5-Band Equalizer Card with True Vertical Sliders (40% Viewport Height)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -201,7 +208,7 @@ fun EqualizerScreen(
                                     .height(sliderTrackHeight),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Slider(
+                                VerticalSlider(
                                     value = levelDb.toFloat(),
                                     onValueChange = {
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -209,15 +216,10 @@ fun EqualizerScreen(
                                     },
                                     valueRange = -12f..12f,
                                     enabled = state.isEnabled,
-                                    colors = SliderDefaults.colors(
-                                        thumbColor = Color.White,
-                                        activeTrackColor = MaterialTheme.colorScheme.primary,
-                                        inactiveTrackColor = MaterialTheme.colorScheme.background
-                                    ),
-                                    modifier = Modifier
-                                        .width(sliderTrackHeight)
-                                        .height(48.dp)
-                                        .graphicsLayer(rotationZ = -90f)
+                                    activeColor = MaterialTheme.colorScheme.primary,
+                                    inactiveColor = MaterialTheme.colorScheme.background,
+                                    thumbColor = Color.White,
+                                    modifier = Modifier.fillMaxSize()
                                 )
                             }
 
@@ -317,6 +319,84 @@ fun EqualizerScreen(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun VerticalSlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    valueRange: ClosedFloatingPointRange<Float>,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier,
+    activeColor: Color,
+    inactiveColor: Color,
+    thumbColor: Color
+) {
+    val rangeSpan = valueRange.endInclusive - valueRange.start
+
+    Box(
+        modifier = modifier
+            .pointerInput(enabled, valueRange) {
+                if (!enabled) return@pointerInput
+                detectVerticalDragGestures { change, dragAmount ->
+                    change.consume()
+                    val height = size.height.toFloat()
+                    if (height > 0f) {
+                        val deltaValue = (-dragAmount / height) * rangeSpan
+                        val newValue = (value + deltaValue).coerceIn(valueRange)
+                        onValueChange(newValue)
+                    }
+                }
+            }
+            .pointerInput(enabled, valueRange) {
+                if (!enabled) return@pointerInput
+                detectTapGestures { offset ->
+                    val height = size.height.toFloat()
+                    if (height > 0f) {
+                        val fraction = 1f - (offset.y / height).coerceIn(0f, 1f)
+                        val newValue = valueRange.start + fraction * rangeSpan
+                        onValueChange(newValue)
+                    }
+                }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val trackWidth = 8.dp.toPx()
+            val thumbRadius = 14.dp.toPx()
+            val height = size.height
+            val width = size.width
+            val centerX = width / 2f
+
+            // Inactive track
+            drawRoundRect(
+                color = inactiveColor,
+                topLeft = Offset(centerX - trackWidth / 2f, 0f),
+                size = Size(trackWidth, height),
+                cornerRadius = CornerRadius(trackWidth / 2f, trackWidth / 2f)
+            )
+
+            val fraction = ((value - valueRange.start) / rangeSpan).coerceIn(0f, 1f)
+            val activeHeight = height * fraction
+            val activeTop = height - activeHeight
+
+            // Active track
+            drawRoundRect(
+                color = activeColor,
+                topLeft = Offset(centerX - trackWidth / 2f, activeTop),
+                size = Size(trackWidth, activeHeight),
+                cornerRadius = CornerRadius(trackWidth / 2f, trackWidth / 2f)
+            )
+
+            // Thumb
+            val thumbY = activeTop
+            drawCircle(
+                color = thumbColor,
+                radius = thumbRadius,
+                center = Offset(centerX, thumbY.coerceIn(thumbRadius, height - thumbRadius))
+            )
         }
     }
 }
