@@ -414,44 +414,57 @@ fun MainAppContent(
                     )
                 }
 
-                // Floating Glass Pills (Mini Player + Navigation Bar)
-                val isPillVisible = activeOverlay == ScreenOverlay.NONE && isPillVisibleByScroll
+                // Floating Glass Pills (Mini Player pinned, Navigation Bar scroll-hiding)
+                val isMiniPlayerVisible = activeOverlay == ScreenOverlay.NONE && playerState.currentSong != null
+                val isNavPillVisible = activeOverlay == ScreenOverlay.NONE && isPillVisibleByScroll
 
-                AnimatedVisibility(
-                    visible = isPillVisible,
-                    enter = slideInVertically(
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessLow
-                        )
-                    ) { it } + fadeIn(animationSpec = tween(250)),
-                    exit = slideOutVertically(
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioNoBouncy,
-                            stiffness = Spring.StiffnessMedium
-                        )
-                    ) { it } + fadeOut(animationSpec = tween(250)),
-                    modifier = Modifier.align(Alignment.BottomCenter)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(bottom = 12.dp)
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .navigationBarsPadding()
-                            .padding(bottom = 12.dp)
-                    ) {
-                        if (playerState.currentSong != null) {
-                            MiniPlayerPill(
-                                song = playerState.currentSong,
-                                isPlaying = playerState.isPlaying,
-                                vibrationEnabled = settings.vibrationEnabled,
-                                onTogglePlayPause = { nowPlayingViewModel.togglePlayPause() },
-                                onNextTrack = { nowPlayingViewModel.skipToNext() },
-                                onClick = { activeOverlay = ScreenOverlay.NOW_PLAYING },
-                                onToggleFavorite = { nowPlayingViewModel.toggleFavorite() }
+                    AnimatedVisibility(
+                        visible = isMiniPlayerVisible,
+                        enter = slideInVertically(
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessLow
                             )
-                            Spacer(modifier = Modifier.height(12.dp))
-                        }
+                        ) { it } + fadeIn(animationSpec = tween(250)),
+                        exit = slideOutVertically { it } + fadeOut(animationSpec = tween(200))
+                    ) {
+                        MiniPlayerPill(
+                            song = playerState.currentSong,
+                            isPlaying = playerState.isPlaying,
+                            vibrationEnabled = settings.vibrationEnabled,
+                            onTogglePlayPause = { nowPlayingViewModel.togglePlayPause() },
+                            onNextTrack = { nowPlayingViewModel.skipToNext() },
+                            onClick = { activeOverlay = ScreenOverlay.NOW_PLAYING },
+                            onToggleFavorite = { nowPlayingViewModel.toggleFavorite() }
+                        )
+                    }
 
+                    if (isMiniPlayerVisible && isNavPillVisible) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    AnimatedVisibility(
+                        visible = isNavPillVisible,
+                        enter = slideInVertically(
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        ) { it } + fadeIn(animationSpec = tween(250)),
+                        exit = slideOutVertically(
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioNoBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            )
+                        ) { it } + fadeOut(animationSpec = tween(250))
+                    ) {
                         GlassNavigationBar(
                             selectedTab = selectedTab,
                             onTabSelected = { selectedTab = it }
