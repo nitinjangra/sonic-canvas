@@ -122,6 +122,7 @@ fun NowPlayingScreen(
     sleepTimerRemainingMs: Long,
     isEqualizerEnabled: Boolean = false,
     vibrationEnabled: Boolean = true,
+    materialDesignEnabled: Boolean = true,
     lyricsState: LyricsUiState,
     onSaveLyrics: (Long, String) -> Unit,
     onSeekToLyric: (Long) -> Unit,
@@ -356,6 +357,7 @@ fun NowPlayingScreen(
                                 }
                             }
                         } else {
+                            val thumbShape = if (materialDesignEnabled) RoundedCornerShape(36.dp) else RoundedCornerShape(24.dp)
                             AsyncImage(
                                 model = song.artworkUri,
                                 fallback = painterResource(com.pixelpushers.sonixa.R.drawable.placeholder),
@@ -364,7 +366,7 @@ fun NowPlayingScreen(
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .clip(RoundedCornerShape(24.dp))
+                                    .clip(thumbShape)
                                     .pointerInput(Unit) {
                                         detectTapGestures(
                                             onTap = { onDismiss() },

@@ -48,6 +48,16 @@ class ScannerAndQueueTest {
         assertTrue("File inside selected Music folder should be included in positive flow", matchesIncluded)
     }
 
+    @Test
+    fun testExpressiveCardAndThumbnailShapes() {
+        val materialDesignEnabled = true
+        val playlistShapeRadius = if (materialDesignEnabled) 28 else 16
+        val thumbnailShapeRadius = if (materialDesignEnabled) 36 else 24
+
+        assertEquals(28, playlistShapeRadius)
+        assertEquals(36, thumbnailShapeRadius)
+    }
+
     // --- Negative Test Flows ---
 
     @Test

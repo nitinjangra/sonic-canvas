@@ -381,7 +381,8 @@ fun MainAppContent(
                         } catch (_: Exception) {
                             LibraryViewType.LIST
                         },
-                        onViewTypeChange = { settingsViewModel.setPlaylistViewType(it) }
+                        onViewTypeChange = { settingsViewModel.setPlaylistViewType(it) },
+                        materialDesignEnabled = settings.materialDesignEnabled
                     )
 
                     MainTab.SETTINGS -> SettingsScreen(
@@ -517,7 +518,8 @@ fun MainAppContent(
                                 playerState.currentSong?.let { lyricsViewModel.loadLyricsForSong(it.id) }
                                 activeOverlay = ScreenOverlay.LYRICS
                             },
-                            onOpenQueue = { activeOverlay = ScreenOverlay.QUEUE }
+                            onOpenQueue = { activeOverlay = ScreenOverlay.QUEUE },
+                            materialDesignEnabled = settings.materialDesignEnabled
                         )
 
                         ScreenOverlay.LYRICS -> LyricsScreen(

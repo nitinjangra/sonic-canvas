@@ -99,6 +99,7 @@ fun PlaylistsScreen(
     onShuffleAll: (List<SongEntity>) -> Unit = {},
     viewType: LibraryViewType = LibraryViewType.LIST,
     onViewTypeChange: (LibraryViewType) -> Unit = {},
+    materialDesignEnabled: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     var showNewPlaylistDialog by remember { mutableStateOf(false) }
@@ -214,6 +215,7 @@ fun PlaylistsScreen(
                             songCount = favorites.size,
                             icon = Icons.Default.Favorite,
                             iconTint = MaterialTheme.colorScheme.primary,
+                            materialDesignEnabled = materialDesignEnabled,
                             onClick = {
                                 selectedAutoPlaylistTitle = "Favorites"
                                 selectedAutoPlaylistSongs = favorites
@@ -227,6 +229,7 @@ fun PlaylistsScreen(
                             songCount = recentlyPlayed.size,
                             icon = Icons.Default.History,
                             iconTint = MaterialTheme.colorScheme.primary,
+                            materialDesignEnabled = materialDesignEnabled,
                             onClick = {
                                 selectedAutoPlaylistTitle = "Recently Played"
                                 selectedAutoPlaylistSongs = recentlyPlayed
@@ -240,6 +243,7 @@ fun PlaylistsScreen(
                             songCount = mostPlayed.size,
                             icon = Icons.AutoMirrored.Filled.TrendingUp,
                             iconTint = MaterialTheme.colorScheme.primary,
+                            materialDesignEnabled = materialDesignEnabled,
                             onClick = {
                                 selectedAutoPlaylistTitle = "Most Played"
                                 selectedAutoPlaylistSongs = mostPlayed
@@ -273,6 +277,7 @@ fun PlaylistsScreen(
                             CustomPlaylistRow(
                                 playlist = playlist,
                                 getSongCount = getSongCountForPlaylist,
+                                materialDesignEnabled = materialDesignEnabled,
                                 onClick = { selectedPlaylistEntity = playlist }
                             )
                         }
@@ -302,6 +307,7 @@ fun PlaylistsScreen(
                             songCount = favorites.size,
                             icon = Icons.Default.Favorite,
                             iconTint = MaterialTheme.colorScheme.primary,
+                            materialDesignEnabled = materialDesignEnabled,
                             onClick = {
                                 selectedAutoPlaylistTitle = "Favorites"
                                 selectedAutoPlaylistSongs = favorites
@@ -315,6 +321,7 @@ fun PlaylistsScreen(
                             songCount = recentlyPlayed.size,
                             icon = Icons.Default.History,
                             iconTint = MaterialTheme.colorScheme.primary,
+                            materialDesignEnabled = materialDesignEnabled,
                             onClick = {
                                 selectedAutoPlaylistTitle = "Recently Played"
                                 selectedAutoPlaylistSongs = recentlyPlayed
@@ -328,6 +335,7 @@ fun PlaylistsScreen(
                             songCount = mostPlayed.size,
                             icon = Icons.AutoMirrored.Filled.TrendingUp,
                             iconTint = MaterialTheme.colorScheme.primary,
+                            materialDesignEnabled = materialDesignEnabled,
                             onClick = {
                                 selectedAutoPlaylistTitle = "Most Played"
                                 selectedAutoPlaylistSongs = mostPlayed
@@ -360,6 +368,7 @@ fun PlaylistsScreen(
                             CustomPlaylistCard(
                                 playlist = playlist,
                                 getSongCount = getSongCountForPlaylist,
+                                materialDesignEnabled = materialDesignEnabled,
                                 onClick = { selectedPlaylistEntity = playlist }
                             )
                         }
@@ -487,6 +496,7 @@ fun PlaylistsScreen(
 fun CustomPlaylistRow(
     playlist: PlaylistEntity,
     getSongCount: (Long) -> Flow<Int>,
+    materialDesignEnabled: Boolean = true,
     onClick: () -> Unit
 ) {
     val count by getSongCount(playlist.id).collectAsState(initial = 0)
@@ -495,6 +505,7 @@ fun CustomPlaylistRow(
         songCount = count,
         icon = Icons.AutoMirrored.Filled.QueueMusic,
         iconTint = MaterialTheme.colorScheme.primary,
+        materialDesignEnabled = materialDesignEnabled,
         onClick = onClick
     )
 }
@@ -503,6 +514,7 @@ fun CustomPlaylistRow(
 fun CustomPlaylistCard(
     playlist: PlaylistEntity,
     getSongCount: (Long) -> Flow<Int>,
+    materialDesignEnabled: Boolean = true,
     onClick: () -> Unit
 ) {
     val count by getSongCount(playlist.id).collectAsState(initial = 0)
@@ -511,6 +523,7 @@ fun CustomPlaylistCard(
         songCount = count,
         icon = Icons.AutoMirrored.Filled.QueueMusic,
         iconTint = MaterialTheme.colorScheme.primary,
+        materialDesignEnabled = materialDesignEnabled,
         onClick = onClick
     )
 }
@@ -936,11 +949,13 @@ fun AutoPlaylistRow(
     songCount: Int,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     iconTint: Color,
+    materialDesignEnabled: Boolean = true,
     onClick: () -> Unit
 ) {
+    val shape = if (materialDesignEnabled) RoundedCornerShape(28.dp) else RoundedCornerShape(16.dp)
     ElevatedCard(
         onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
+        shape = shape,
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
         ),
@@ -992,11 +1007,13 @@ fun AutoPlaylistCard(
     songCount: Int,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     iconTint: Color,
+    materialDesignEnabled: Boolean = true,
     onClick: () -> Unit
 ) {
+    val shape = if (materialDesignEnabled) RoundedCornerShape(28.dp) else RoundedCornerShape(16.dp)
     ElevatedCard(
         onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
+        shape = shape,
         colors = CardDefaults.elevatedCardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
         ),
