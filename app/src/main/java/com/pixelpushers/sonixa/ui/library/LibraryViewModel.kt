@@ -10,6 +10,7 @@ import com.pixelpushers.sonixa.data.scanner.MediaStoreScanner
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -51,6 +52,15 @@ class LibraryViewModel @Inject constructor(
 
     val scanProgress = scanner.scanProgress
     val notifications: StateFlow<List<AppNotification>> = notificationRepository.notifications
+
+    fun scanMusicOnFirstRunIfEmpty() {
+        viewModelScope.launch {
+            val dbSongs = songDao.getAllSongs().first()
+            if (dbSongs.isEmpty()) {
+                scanner.scanMusic()
+            }
+        }
+    }
 
     fun scanMusic() {
         viewModelScope.launch {

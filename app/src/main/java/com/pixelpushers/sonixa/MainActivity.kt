@@ -102,15 +102,30 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        val exportBackupLauncher = registerForActivityResult(
+            ActivityResultContracts.CreateDocument("application/json")
+        ) { uri ->
+            if (uri != null) {
+                settingsViewModel.exportBackup(uri)
+            }
+        }
+
+        val restoreBackupLauncher = registerForActivityResult(
+            ActivityResultContracts.OpenDocument()
+        ) { uri ->
+            if (uri != null) {
+                settingsViewModel.restoreBackup(uri)
+            }
+        }
+
         checkAudioPermission()
 
         setContent {
             val settings by settingsViewModel.settings.collectAsState()
 
-            LaunchedEffect(hasAudioPermissionState.value, settings.hasScanned) {
-                if (hasAudioPermissionState.value && !settings.hasScanned) {
-                    libraryViewModel.scanMusic()
-                    settingsViewModel.setHasScanned(true)
+            LaunchedEffect(hasAudioPermissionState.value) {
+                if (hasAudioPermissionState.value) {
+                    libraryViewModel.scanMusicOnFirstRunIfEmpty()
                 }
             }
 
@@ -131,7 +146,9 @@ class MainActivity : ComponentActivity() {
                     searchViewModel = searchViewModel,
                     settingsViewModel = settingsViewModel,
                     settings = settings,
-                    onChooseFolder = { folderPickerLauncher.launch(null) }
+                    onChooseFolder = { folderPickerLauncher.launch(null) },
+                    onExportBackup = { exportBackupLauncher.launch("Sonixa_Backup.json") },
+                    onRestoreBackup = { restoreBackupLauncher.launch(arrayOf("application/json", "*/*")) }
                 )
             }
         }
@@ -175,7 +192,9 @@ fun MainAppContent(
     searchViewModel: SearchViewModel,
     settingsViewModel: SettingsViewModel,
     settings: UserSettings,
-    onChooseFolder: () -> Unit
+    onChooseFolder: () -> Unit,
+    onExportBackup: () -> Unit = {},
+    onRestoreBackup: () -> Unit = {}
 ) {
     val songs by libraryViewModel.songs.collectAsState()
     val scanProgress by libraryViewModel.scanProgress.collectAsState()
@@ -330,7 +349,9 @@ fun MainAppContent(
                         onSetVibrationEnabled = { settingsViewModel.setVibrationEnabled(it) },
                         onChooseScanFolder = onChooseFolder,
                         onSetMaterialDesignEnabled = { settingsViewModel.setMaterialDesignEnabled(it) },
-                        onSetMaterialYouEnabled = { settingsViewModel.setMaterialYouEnabled(it) }
+                        onSetMaterialYouEnabled = { settingsViewModel.setMaterialYouEnabled(it) },
+                        onExportBackup = onExportBackup,
+                        onRestoreBackup = onRestoreBackup
                     )
                 }
 
